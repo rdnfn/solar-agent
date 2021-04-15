@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		// Remove telemtry
+		"telemetry.enableCrashReporter": false,
+		"telemetry.enableTelemetry": false,
+		"python.linting.pylintEnabled": true,
+	},
+	"extensions": {
+		"recommendations": [
+			"waderyan.gitblame",
+			"kevinrose.vsc-python-indent",
+			"njpwerner.autodocstring",
+			"ms-python.python",
+			"ms-python.vscode-pylance",
+			"donjayamanne.githistory"
+		]
+	}
+}
