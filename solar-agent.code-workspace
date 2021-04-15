@@ -8,7 +8,6 @@
 		// Remove telemtry
 		"telemetry.enableCrashReporter": false,
 		"telemetry.enableTelemetry": false,
-		"python.linting.pylintEnabled": true,
 		// EDITOR SETTINGS
 		// Enable automatic formatting on save
 		"editor.formatOnSave": true,
@@ -45,6 +44,7 @@
 		"autoDocstring.startOnNewLine": true,
 		// Enable linting
 		"python.linting.enabled": true,
+		"python.linting.pylintEnabled": true,
 		// Set linter to be flake8 (will then use the setup.cfg file for linting rules)
 		"python.linting.flake8Enabled": true,
 		// Automatically trim trailing whitespaces only for python files
