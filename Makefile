@@ -18,13 +18,13 @@ clean:
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete
 
-## Lint src directory using flake8
+## Lint solara directory using flake8
 lint:
-	flake8 src
+	flake8 solara
 
-## Format src directory using black
+## Format solara directory using black
 format:
-	black src
+	black solara
 
 ## Set up python interpreter environment and install basic dependencies
 env:

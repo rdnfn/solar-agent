@@ -35,9 +35,9 @@ make env
 │
 ├── requirements       <- Directory containing the requirement files.
 │
-├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
-├── src                <- Source code for use in this project.
-│   ├── __init__.py    <- Makes src a Python module
+├── setup.py           <- makes project pip installable (pip install -e .) so solara can be imported
+├── solara             <- Source code for use in this project.
+│   ├── __init__.py    <- Makes solara a Python module
 │   │
 │   ├── data_loading   <- Scripts to download or generate data
 │   │
