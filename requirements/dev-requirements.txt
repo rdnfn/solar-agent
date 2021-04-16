@@ -13,7 +13,8 @@ pre-commit          # allows to run checks for every git commit
 # Reinforcement learning libraries
 gym                 # OpenAI gym for environment
 torch               # Pytorch
-
-# TODO: fix errors thrown by installing ray as below
-# via pip
+# TODO: fix errors thrown by installing ray as below via pip
 #ray[rllib]          # RLlib
+
+# Interactive computing
+jupyterlab          # Jupyter lab
