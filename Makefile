@@ -26,12 +26,28 @@ lint:
 format:
 	black solara
 
-## Set up python interpreter environment and install basic dependencies
-env:
+## Create dev environment using conda.
+## Set up python interpreter environment via conda
+## and install dev dependencies via pip.
+conda:
+	@echo ">>> Creating conda environment."
+
+	# Create the conda environment
+	conda env create --prefix=./env -f requirements/environment.yml
+
+	@echo ">>> New conda env created. Activate from project directory with:\nconda activate ./env"
+
+# Remove conda env
+remove_conda:
+	conda env remove -p ./env
+	@echo ">>> Conda environment removed."
+
+## Create dev environment using venv library. Requires python 3.8 installation.
+venv:
 	@echo ">>> Creating virtual environment using venv python library."
 
-	python3.9 -m venv env
-	python3.9 -m pip install -r requirements/dev-requirements.txt
+	python3.8 -m venv env
+	python3.8 -m pip install -r requirements/dev-requirements.txt
 
 	@echo ">>> New env created. Activate from project directory with:\nsource env/bin/activate"
 

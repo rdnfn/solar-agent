@@ -1,9 +1,6 @@
 # NOTE: These requirements are used for developing code on the repo.
 # As a standard they include certain formatters and linters.
 
-# local package
--e .
-
 # external requirements (mostly linters and formatters)
 flake8              # flake8 linter
 flake8-docstrings   # docstring support for flake8
@@ -12,3 +9,11 @@ black               # automatic formatting provider
 isort               # automatic import sorter
 python-dotenv       # environment variable manager
 pre-commit          # allows to run checks for every git commit
+
+# Reinforcement learning libraries
+gym                 # OpenAI gym for environment
+torch               # Pytorch
+
+# TODO: fix errors thrown by installing ray as below
+# via pip
+#ray[rllib]          # RLlib
