@@ -40,8 +40,6 @@
 		"python.formatting.provider": "black",
 		// Include [extendedSummary] tag in automatic docstring generation
 		"autoDocstring.includeExtendedSummary": true,
-		// Start each docstring on a new line
-		"autoDocstring.startOnNewLine": true,
 		// Enable linting
 		"python.linting.enabled": true,
 		"python.linting.pylintEnabled": true,
