@@ -118,10 +118,10 @@ class LithiumIonBattery:
         is low enough to avoid violating the lower energy limit constraint.
 
         Args:
-            power (float): power to be discharged
+            power (float): power to be discharged.
 
         Returns:
-            float: [description]
+            float: max power that can be discharged.
         """
         for d in np.linspace(power, 0, num=30):
             lower_lim = self.a1_slope * (d / self.nominal_voltage_d) + self.a1_intercept
