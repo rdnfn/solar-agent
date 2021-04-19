@@ -6,7 +6,7 @@ import numpy as np
 class LithiumIonBattery:
     """Class modelling lithium-ion battery."""
 
-    def __init__(self, size: float, chemistry: str, time_step: int):
+    def __init__(self, size: float, chemistry: str, time_step_len: float):
         """Class modelling lithium-ion battery.
 
         This class was originally written and kindly provided by Fiodar Kazhamiaka.
@@ -16,11 +16,12 @@ class LithiumIonBattery:
             size (float): kWh capacity.
             chemistry (str): chemistry type of the battery. One of
                 "LTO" (lithium titanate) or "NMC" (Li Nickel Manganice Cobalt).
-            time_step (int): time step of simulation in hours (originally named T_u).
+            time_step_len (float): time step length/duration of simulation in hours
+                (originally named T_u).
         """
         self.size = size
         self.chemistry = chemistry
-        self.time_step = time_step
+        self.time_step_len = time_step_len
 
         # declare battery model parameters
         self.num_cells = None
@@ -106,7 +107,7 @@ class LithiumIonBattery:
         """
         for c in np.linspace(power, 0, num=30):
             upper_lim = self.a2_slope * (c / self.nominal_voltage_c) + self.a2_intercept
-            b_temp = self.b + c * self.eta_c * self.time_step
+            b_temp = self.b + c * self.eta_c * self.time_step_len
             if b_temp <= upper_lim:
                 return c
         return 0
@@ -125,7 +126,7 @@ class LithiumIonBattery:
         """
         for d in np.linspace(power, 0, num=30):
             lower_lim = self.a1_slope * (d / self.nominal_voltage_d) + self.a1_intercept
-            b_temp = self.b - d * self.eta_d * self.time_step
+            b_temp = self.b - d * self.eta_d * self.time_step_len
             if b_temp >= lower_lim:
                 return d
         return 0
@@ -154,8 +155,8 @@ class LithiumIonBattery:
 
         self.b = (
             self.b
-            + new_c * self.eta_c * self.time_step
-            - new_d * self.eta_d * self.time_step
+            + new_c * self.eta_c * self.time_step_len
+            - new_d * self.eta_d * self.time_step_len
         )
 
         # return the actual amount of power applied
