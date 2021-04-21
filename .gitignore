@@ -90,3 +90,6 @@ io/
 
 # History files
 .history
+
+# Project data
+data/
