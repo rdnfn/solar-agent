@@ -1,5 +1,7 @@
 """This module contains photovoltaic system models."""
 
+import numpy as np
+
 
 class BasePV:
     """Base class for photovoltaic (PV) system models."""
@@ -16,5 +18,17 @@ class BasePV:
 
         Returns:
             float: generated power (kW)
+        """
+        raise NotImplementedError
+
+    def get_prediction(self, start_time: float, end_time: float) -> np.array:
+        """Get prediction of future PV generation.
+
+        Args:
+            start_time (float): begin of prediction
+            end_time (float): end of prediction
+
+        Returns:
+            np.array: predicted generation (kW)
         """
         raise NotImplementedError
