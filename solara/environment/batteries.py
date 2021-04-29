@@ -178,7 +178,7 @@ class LithiumIonBattery:
         https://cs.stanford.edu/~fiodar/pubs/TractableLithium-ionStorageMod.pdf
         """
 
-        # contraint in Equation (20) of paper above
+        # constraint in Equation (20) of paper above
         delta_energy = cp.multiply(
             power_episode * self.eta_c * self.time_step_len, (power_episode >= 0)
         )
@@ -188,6 +188,15 @@ class LithiumIonBattery:
 
         constraints = [
             battery_content_episode[1:]
-            == battery_content_episode[:-1] + delta_energy  # contraint in Equation (19)
+            == battery_content_episode[:-1]
+            + delta_energy,  # constraint in Equation (19)
+            # constraint in Equation (21)
+            self.num_cells * self.alpha_d * self.nominal_voltage_d <= power_episode,
+            self.num_cells * self.alpha_c * self.nominal_voltage_c >= power_episode,
+            # constraint in Equation (22)
+            self.a1_slope * power_episode / self.nominal_voltage_d + self.a1_intercept
+            <= battery_content_episode,
+            self.a2_slope * power_episode / self.nominal_voltage_c + self.a2_intercept
+            >= battery_content_episode,
         ]
         return constraints
