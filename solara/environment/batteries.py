@@ -1,6 +1,9 @@
 """Module with different types of batteries."""
 
+from typing import List
+
 import numpy as np
+import cvxpy as cp
 
 
 class LithiumIonBattery:
@@ -165,3 +168,18 @@ class LithiumIonBattery:
     def get_energy_content(self) -> None:
         """Return the current energy content."""
         return self.b
+
+    def get_contraints(
+        self, power_episode: cp.Variable, battery_content_episode: cp.Variable
+    ) -> List:
+        """Return CVXPY-compatible list of constraints."""
+        delta_energy = cp.multiply(
+            power_episode * self.eta_c * self.time_step_len, (power_episode >= 0)
+        )
+        delta_energy += cp.multiply(
+            power_episode * self.eta_d * self.time_step_len, (power_episode < 0)
+        )
+        constraints = [
+            battery_content_episode[1:] == battery_content_episode[:-1] + delta_energy
+        ]
+        return constraints
