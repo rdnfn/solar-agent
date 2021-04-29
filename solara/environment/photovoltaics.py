@@ -10,16 +10,12 @@ class PhotovoltaicModel:
         """Base class for photovoltaic (PV) system models."""
         pass
 
-    def get_generation(self, time: float) -> float:
-        """Get power generation for given time.
-
-        Args:
-            time (float): time of generation
+    def get_next_generation(self) -> float:
+        """Get power generation for next time step.
 
         Returns:
             float: generated power (kW)
         """
-        raise NotImplementedError
 
     def get_prediction(self, start_time: float, end_time: float) -> np.array:
         """Get prediction of future PV generation.
@@ -59,6 +55,7 @@ class DataPV(PhotovoltaicModel):
         """Reset the PV system to new randomly sampled data."""
         self.time_step = 0
         start = np.random.randint(len(self.data) // 24) * 24
+        self.start = start
         end = start + self.num_steps
         self.episode_values = self.data[start:end]
 
@@ -66,15 +63,14 @@ class DataPV(PhotovoltaicModel):
         self.time_step += 1
 
     def get_next_generation(self) -> float:
-        """Get power generation for given time.
-
-        Args:
-            time (float): time of generation
+        """Get power generation for next time step.
 
         Returns:
             float: generated power (kW)
         """
-        return self.episode_values[self.time_step]
+        gen_power = self.episode_values[self.time_step]
+        self.step()
+        return gen_power
 
     def get_prediction(self, start_time: float, end_time: float) -> np.array:
         """Get prediction of future PV generation.
