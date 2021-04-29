@@ -179,6 +179,7 @@ class LithiumIonBattery:
         """
 
         # constraint in Equation (20) of paper above
+        # TODO move into contraints
         delta_energy = cp.multiply(
             power_episode * self.eta_c * self.time_step_len, (power_episode >= 0)
         )
