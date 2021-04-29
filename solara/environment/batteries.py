@@ -172,14 +172,22 @@ class LithiumIonBattery:
     def get_contraints(
         self, power_episode: cp.Variable, battery_content_episode: cp.Variable
     ) -> List:
-        """Return CVXPY-compatible list of constraints."""
+        """Return CVXPY-compatible list of constraints.
+
+        This follows the C/L/C model described on page 12 of
+        https://cs.stanford.edu/~fiodar/pubs/TractableLithium-ionStorageMod.pdf
+        """
+
+        # contraint in Equation (20) of paper above
         delta_energy = cp.multiply(
             power_episode * self.eta_c * self.time_step_len, (power_episode >= 0)
         )
         delta_energy += cp.multiply(
             power_episode * self.eta_d * self.time_step_len, (power_episode < 0)
         )
+
         constraints = [
-            battery_content_episode[1:] == battery_content_episode[:-1] + delta_energy
+            battery_content_episode[1:]
+            == battery_content_episode[:-1] + delta_energy  # contraint in Equation (19)
         ]
         return constraints
