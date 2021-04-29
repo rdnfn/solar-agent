@@ -39,7 +39,7 @@ class DataPV(PhotovoltaicModel):
         """Photovoltaic model that samples from data.
 
         Args:
-            data_path (str): path to PV  data in a txt file with solar trace in kW
+            data_path (str): path to PV data in a txt file with solar trace in kW
             time_step_len (float): length of time steps in hours. Defaults to 1.
             num_steps (int): number of time steps. Defaults to 24.
         """
@@ -51,10 +51,14 @@ class DataPV(PhotovoltaicModel):
 
         self.reset()
 
-    def reset(self) -> None:
+    def reset(self, start: int = None) -> None:
         """Reset the PV system to new randomly sampled data."""
+
         self.time_step = 0
-        start = np.random.randint(len(self.data) // 24) * 24
+
+        # Set values for entire episode
+        if start is None:
+            start = np.random.randint(len(self.data) // 24) * 24
         self.start = start
         end = start + self.num_steps
         self.episode_values = self.data[start:end]
