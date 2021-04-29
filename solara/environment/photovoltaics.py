@@ -8,7 +8,7 @@ class PhotovoltaicModel:
 
     def __init__(self) -> None:
         """Base class for photovoltaic (PV) system models."""
-        raise NotImplementedError
+        pass
 
     def get_generation(self, time: float) -> float:
         """Get power generation for given time.
@@ -49,7 +49,7 @@ class DataPV(PhotovoltaicModel):
         """
         super().__init__()
 
-        self.data = np.loadtxt(data_path)
+        self.data = np.loadtxt(data_path, delimiter=",")
         self.num_steps = num_steps
         self.time_step_len = time_step_len
 
@@ -58,14 +58,14 @@ class DataPV(PhotovoltaicModel):
     def reset(self) -> None:
         """Reset the PV system to new randomly sampled data."""
         self.time_step = 0
-        start = np.random.randint(len(self.data) // 24)
+        start = np.random.randint(len(self.data) // 24) * 24
         end = start + self.num_steps
         self.episode_values = self.data[start:end]
 
     def step(self) -> None:
         self.time_step += 1
 
-    def get_generation(self, time: float) -> float:
+    def get_next_generation(self) -> float:
         """Get power generation for given time.
 
         Args:
