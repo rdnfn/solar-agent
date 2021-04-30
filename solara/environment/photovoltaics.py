@@ -3,7 +3,7 @@
 import numpy as np
 
 
-class PhotovoltaicModel:
+class PVModel:
     """Base class for photovoltaic (PV) system models."""
 
     def __init__(self) -> None:
@@ -30,7 +30,7 @@ class PhotovoltaicModel:
         raise NotImplementedError
 
 
-class DataPV(PhotovoltaicModel):
+class DataPV(PVModel):
     """Photovoltaic model that samples from data."""
 
     def __init__(
