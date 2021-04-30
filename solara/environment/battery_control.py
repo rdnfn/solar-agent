@@ -3,6 +3,11 @@
 from typing import Tuple
 import gym
 
+from solara.environment.batteries import BatteryModel
+from solara.environment.grids import GridModel
+from solara.environment.loads import LoadModel
+from solara.environment.photovoltaics import PVModel
+
 
 class BatteryControlEnv(gym.Env):
     """A gym enviroment for controlling a battery in a PV installation."""
@@ -16,7 +21,13 @@ class BatteryControlEnv(gym.Env):
     action_space = None
     observation_space = None
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        battery: BatteryModel,
+        pv_system: PVModel,
+        grid: GridModel,
+        load: LoadModel,
+    ) -> None:
         """A gym enviroment for controlling a battery in a PV installation.
 
         This class inherits from the main OpenAI Gym class. The initial non-implemented
@@ -37,7 +48,10 @@ class BatteryControlEnv(gym.Env):
         want a narrower range. The methods are accessed publicly as "step", "reset",
         etc...
         """
-        raise NotImplementedError
+        self.battery = battery
+        self.pv_system = pv_system
+        self.grid = grid
+        self.load = load
 
     def step(self, action: object) -> Tuple[object, float, bool, dict]:
         """Run one timestep of the environment's dynamics.
