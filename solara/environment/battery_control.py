@@ -52,7 +52,9 @@ class BatteryControlEnv(gym.Env):
 
         # Setting up action and observation space
 
-        # current load, current generation, time step, cumulative load, cumulative gen
+        # Observations have the following elements:
+        # current load, current generation, battery content, time step,
+        # cumulative load, cumulative gen
         low = np.zeros(6)
         high = np.array(
             [
