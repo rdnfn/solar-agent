@@ -212,29 +212,3 @@ class BatteryControlEnv(gym.Env):
               this won't be true if seed=None, for example.
         """
         raise NotImplementedError
-
-    @property
-    def unwrapped(self) -> None:
-        """Completely unwrap this env.
-
-        Returns:
-            gym.Env: The base non-wrapped gym.Env instance
-        """
-        return self
-
-    def __str__(self) -> str:
-        """Return string."""
-        if self.spec is None:
-            return "<{} instance>".format(type(self).__name__)
-        else:
-            return "<{}<{}>>".format(type(self).__name__, self.spec.id)
-
-    def __enter__(self) -> object:
-        """Support with-statement for the environment."""
-        return self
-
-    def __exit__(self, *args) -> bool:
-        """Support with-statement for the environment."""
-        self.close()
-        # propagate exception
-        return False
