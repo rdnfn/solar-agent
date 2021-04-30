@@ -180,6 +180,10 @@ class LithiumIonBattery(BatteryModel):
         """Return the current energy content."""
         return self.b
 
+    def reset(self) -> None:
+        """Reset battery energy content."""
+        self.b = self.a1_intercept
+
     def get_contraints(
         self, power_episode: cp.Variable, battery_content_episode: cp.Variable
     ) -> List:
