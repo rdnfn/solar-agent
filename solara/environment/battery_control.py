@@ -123,16 +123,16 @@ class BatteryControlEnv(gym.Env):
         sum_pv_gen += pv_generation
         self.time_step += 1
 
-        observation = np.array(
-            [
-                load,
-                pv_generation,
-                self.battery.get_energy_content(),
-                self.time_step,
-                sum_load,
-                sum_pv_gen,
-            ]
+        self.state = (
+            load,
+            pv_generation,
+            self.battery.get_energy_content(),
+            self.time_step,
+            sum_load,
+            sum_pv_gen,
         )
+        observation = np.array(self.state)
+
         done = self.time_step >= self.episode_len
 
         return (observation, -cost, done, None)
