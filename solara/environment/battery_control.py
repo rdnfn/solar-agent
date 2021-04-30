@@ -2,6 +2,7 @@
 
 from typing import Tuple
 import gym
+import numpy as np
 
 from solara.environment.batteries import BatteryModel
 from solara.environment.grids import GridModel
@@ -12,21 +13,14 @@ from solara.environment.photovoltaics import PVModel
 class BatteryControlEnv(gym.Env):
     """A gym enviroment for controlling a battery in a PV installation."""
 
-    # Set this in SOME subclasses
-    metadata = {"render.modes": []}
-    reward_range = (-float("inf"), float("inf"))
-    spec = None
-
-    # Set these in ALL subclasses
-    action_space = None
-    observation_space = None
-
     def __init__(
         self,
         battery: BatteryModel,
         pv_system: PVModel,
         grid: GridModel,
         load: LoadModel,
+        episode_len: float = 24,
+        time_step_len: float = 1,
     ) -> None:
         """A gym enviroment for controlling a battery in a PV installation.
 
@@ -53,6 +47,32 @@ class BatteryControlEnv(gym.Env):
         self.grid = grid
         self.load = load
 
+        self.episode_len = episode_len
+        self.time_step_len = time_step_len
+
+        # Setting up action and observation space
+
+        # current load, current generation, time step, cumulative load, cumulative gen
+        low = np.zeros(6)
+        high = np.array(
+            [
+                np.finfo(np.float32).max,
+                np.finfo(np.float32).max,
+                np.finfo(np.float32).max,
+                self.episode_len,
+                np.finfo(np.float32).max,
+                np.finfo(np.float32).max,
+            ],
+            dtype=np.float32,
+        )
+        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low, high, dtype=np.float32)
+
+        (
+            self.min_charge_power,
+            self.max_charge_power,
+        ) = self.battery.get_charging_limits()
+
     def step(self, action: object) -> Tuple[object, float, bool, dict]:
         """Run one timestep of the environment's dynamics.
 
@@ -70,21 +90,61 @@ class BatteryControlEnv(gym.Env):
             info (dict): contains auxiliary diagnostic information
                 (helpful for debugging, and sometimes learning)
         """
-        raise NotImplementedError
+        assert self.action_space.contains(action), "%r (%s) invalid" % (
+            action,
+            type(action),
+        )
+
+        # Get old state
+        load, pv_generation, _, _, sum_load, sum_pv_gen = self.state
+
+        # Actions are proportion of max/min charging power, hence scale up
+        if action > 0:
+            action *= self.max_charge_power
+        else:
+            action *= self.min_charge_power
+
+        charging_power = self.battery.charge(power=action)
+
+        # Get the net load after accounting for power stream of battery and PV
+        net_load = load + charging_power - pv_generation
+        net_load = np.maximum(net_load, 0)
+
+        # Draw remaining net load from grid and get price paid
+        cost = self.grid.draw_power(power=net_load)
+
+        # Get load and PV generation for next time step
+        load = self.load.get_next_load()
+        pv_generation = self.pv_system.get_next_generation()
+
+        sum_load += load
+        sum_pv_gen += pv_generation
+        self.time_step += 1
+
+        observation = np.array(
+            [
+                load,
+                pv_generation,
+                self.battery.get_energy_content(),
+                self.time_step,
+                sum_load,
+                sum_pv_gen,
+            ]
+        )
+        done = self.time_step >= self.episode_len
+
+        return (observation, -cost, done, None)
 
     def reset(self) -> object:
         """Resets environment to initial state and returns an initial observation.
 
-        Note that this function should not reset the environment's random
-        number generator(s); random variables in the environment's state should
-        be sampled independently between multiple calls to `reset()`. In other
-        words, each call of `reset()` should yield an environment suitable for
-        a new episode, independent of previous episodes.
-
         Returns:
             observation (object): the initial observation.
         """
-        raise NotImplementedError
+        self.state = np.zeros(6)
+        self.time_step = 0
+
+        return np.array(self.state)
 
     def render(self, mode: str = "human") -> None:
         """Renders the environment.
