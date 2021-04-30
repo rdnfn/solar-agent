@@ -1,6 +1,6 @@
 """Module with different types of batteries."""
 
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import cvxpy as cp
@@ -103,11 +103,11 @@ class LithiumIonBattery(BatteryModel):
 
         Decrease the applied (charging) power by increments of (1/30) until the power is
         low enough to avoid violating the upper energy limit constraint.
-        Could speed these functions upp with a binary search instead of linear search,
+        Could speed these functions up with a binary search instead of linear search,
         or a lookup table.
 
         Args:
-            power (float): applied charging power (in kWh)
+            power (float): applied charging power (in kW)
 
         Returns:
             float: max amount of power that can be charged.
@@ -137,6 +137,13 @@ class LithiumIonBattery(BatteryModel):
             if b_temp >= lower_lim:
                 return d
         return 0
+
+    def get_charging_limits(self) -> Tuple[float, float]:
+        """Get general maximum and minimum charging constraints."""
+        max_charge_power = self.num_cells * self.alpha_c * self.nominal_voltage_c
+        min_charge_power = -(self.num_cells * self.alpha_d * self.nominal_voltage_d)
+
+        return min_charge_power, max_charge_power
 
     def charge(self, power: float) -> float:
         """Update the battery's energy content.
