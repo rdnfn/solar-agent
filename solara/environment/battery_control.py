@@ -73,6 +73,8 @@ class BatteryControlEnv(gym.Env):
             self.max_charge_power,
         ) = self.battery.get_charging_limits()
 
+        self.reset()
+
     def step(self, action: object) -> Tuple[object, float, bool, dict]:
         """Run one timestep of the environment's dynamics.
 
@@ -102,7 +104,7 @@ class BatteryControlEnv(gym.Env):
         if action > 0:
             action *= self.max_charge_power
         else:
-            action *= self.min_charge_power
+            action *= -self.min_charge_power
 
         charging_power = self.battery.charge(power=action)
 
@@ -143,6 +145,10 @@ class BatteryControlEnv(gym.Env):
         """
         self.state = np.zeros(6)
         self.time_step = 0
+
+        self.battery.reset()
+        self.load.reset()
+        self.pv_system.reset()
 
         return np.array(self.state)
 
