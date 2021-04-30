@@ -6,7 +6,11 @@ import numpy as np
 import cvxpy as cp
 
 
-class LithiumIonBattery:
+class BatteryModel:
+    """Base battery model."""
+
+
+class LithiumIonBattery(BatteryModel):
     """Class modelling lithium-ion battery."""
 
     def __init__(self, size: float, chemistry: str, time_step_len: float):
