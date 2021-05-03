@@ -18,3 +18,4 @@ torch               # Pytorch
 
 # Interactive computing
 jupyterlab          # Jupyter lab
+matplotlib          # Standard plotting tools
