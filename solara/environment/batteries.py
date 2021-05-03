@@ -17,7 +17,9 @@ class LithiumIonBattery(BatteryModel):
         """Class modelling lithium-ion battery.
 
         This class was originally written and kindly provided by Fiodar Kazhamiaka.
-        It has been adapted from the original version (mainly formatting).
+        It has been adapted from the original version. The class implements the
+        C/L/C model described on page 12 of
+        https://cs.stanford.edu/~fiodar/pubs/TractableLithium-ionStorageMod.pdf.
 
         Args:
             size (float): kWh capacity.
@@ -126,7 +128,7 @@ class LithiumIonBattery(BatteryModel):
         is low enough to avoid violating the lower energy limit constraint.
 
         Args:
-            power (float): power to be discharged.
+            power (float): power to be discharged (kW)
 
         Returns:
             float: max power that can be discharged.
@@ -152,7 +154,7 @@ class LithiumIonBattery(BatteryModel):
         charging/discharging power (p).
 
         Args:
-            power (float): power to charge or discharge in kWh
+            power (float): power to charge or discharge (kW)
         """
         new_c = 0
         new_d = 0
