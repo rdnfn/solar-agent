@@ -98,6 +98,7 @@ class BatteryControlEnv(gym.Env):
             action,
             type(action),
         )
+        action = action[0]  # getting the float value
 
         # Get old state
         load, pv_generation, _, _, sum_load, sum_pv_gen = self.state
@@ -137,7 +138,7 @@ class BatteryControlEnv(gym.Env):
 
         done = self.time_step >= self.episode_len
 
-        return (observation, -cost, done, None)
+        return (observation, -cost, done, dict())
 
     def reset(self) -> object:
         """Resets environment to initial state and returns an initial observation.
