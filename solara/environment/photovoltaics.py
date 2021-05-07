@@ -48,18 +48,23 @@ class DataPV(PVModel):
         self.data = np.loadtxt(data_path, delimiter=",")
         self.num_steps = num_steps
         self.time_step_len = time_step_len
+        self.fixed_start = None
 
         self.reset()
 
-    def reset(self, start: int = None) -> None:
+    def reset(self) -> None:
         """Reset the PV system to new randomly sampled data."""
 
         self.time_step = 0
 
         # Set values for entire episode
-        if start is None:
+        if self.fixed_start is not None:
+            start = self.fixed_start
+        else:
             start = np.random.randint(len(self.data) // 24) * 24
+
         self.start = start
+
         end = start + self.num_steps
         self.episode_values = self.data[start:end]
 
@@ -87,3 +92,8 @@ class DataPV(PVModel):
             np.array: predicted generation (kW)
         """
         return self.episode_values[start_time:end_time]
+
+    def fix_start(self, start: int = 0) -> None:
+        if start > len(self.data) // 24:
+            raise ValueError("Higher start index than days in data.")
+        self.fixed_start = start * 24
