@@ -13,7 +13,12 @@ pre-commit          # allows to run checks for every git commit
 # Reinforcement learning libraries
 gym                 # OpenAI gym for environment
 torch               # Pytorch
+ray[rllib]          # RLlib
+ray[default]        # Default ray libraries
 
-# TODO: fix errors thrown by installing ray as below
-# via pip
-#ray[rllib]          # RLlib
+# Convex optimisation
+cvxpy               # CVXPY
+
+# Interactive computing
+jupyterlab          # Jupyter lab
+matplotlib          # Standard plotting tools
