@@ -93,3 +93,4 @@ io/
 
 # Project data
 data/
+notebooks/*/tmp/*
