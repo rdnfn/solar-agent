@@ -142,8 +142,8 @@ class LithiumIonBattery(BatteryModel):
 
     def get_charging_limits(self) -> Tuple[float, float]:
         """Get general maximum and minimum charging constraints."""
-        max_charge_power = self.num_cells * self.alpha_c * self.nominal_voltage_c
-        min_charge_power = -(self.num_cells * self.alpha_d * self.nominal_voltage_d)
+        max_charge_power = self.size
+        min_charge_power = -self.size
 
         return min_charge_power, max_charge_power
 
