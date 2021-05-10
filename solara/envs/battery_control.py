@@ -1,9 +1,11 @@
 """Module with battery control environment of a photovoltaic installation."""
 
 from typing import Tuple
+import logging
 import gym
 import numpy as np
 
+import solara.utils.logging
 from solara.envs.components.battery import BatteryModel
 from solara.envs.components.grid import GridModel
 from solara.envs.components.load import LoadModel
@@ -22,6 +24,7 @@ class BatteryControlEnv(gym.Env):
         episode_len: float = 24,
         time_step_len: float = 1,
         grid_charging: bool = False,
+        logging_level: str = "WARNING",
     ) -> None:
         """A gym enviroment for controlling a battery in a PV installation.
 
@@ -43,10 +46,12 @@ class BatteryControlEnv(gym.Env):
         want a narrower range. The methods are accessed publicly as "step", "reset",
         etc...
         """
+
         self.battery = battery
         self.pv_system = pv_system
         self.grid = grid
         self.load = load
+        self.components = [battery, pv_system, grid, load]
 
         self.episode_len = episode_len
         self.time_step_len = time_step_len
@@ -76,6 +81,8 @@ class BatteryControlEnv(gym.Env):
             self.min_charge_power,
             self.max_charge_power,
         ) = self.battery.get_charging_limits()
+
+        self._setup_logging(logging_level)
 
         self.reset()
 
@@ -220,3 +227,14 @@ class BatteryControlEnv(gym.Env):
               this won't be true if seed=None, for example.
         """
         raise NotImplementedError
+
+    def _setup_logging(self, logging_level: str) -> None:
+        """Setup logger and handler."""
+        self.logger = logging.getLogger(type(self).__name__)
+        self.logger.setLevel(logging_level)
+        self.log_handler = solara.utils.logging.OutputWidgetHandler()
+        self.logger.addHandler(self.log_handler)
+
+        for component in self.components:
+            component.set_log_handler(self.log_handler)
+            component.set_log_level(logging_level)
