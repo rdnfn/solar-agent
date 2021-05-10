@@ -179,8 +179,14 @@ class LithiumIonBattery(BatteryModel):
             - new_d * self.eta_d * self.time_step_len
         )
 
-        # return the actual amount of power applied
-        return new_c - new_d
+        # actual amount of power applied
+        actual_power = new_c - new_d
+
+        self.logger.info(
+            "Battery charged with %6.4f kW (attempted %6.4f).", actual_power, power
+        )
+
+        return actual_power
 
     def get_energy_content(self) -> None:
         """Return the current energy content."""
