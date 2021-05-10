@@ -2,13 +2,11 @@
 
 import numpy as np
 
+from solara.envs.components.base import EnvComponent
 
-class PVModel:
+
+class PVModel(EnvComponent):
     """Base class for photovoltaic (PV) system models."""
-
-    def __init__(self) -> None:
-        """Base class for photovoltaic (PV) system models."""
-        pass
 
     def get_next_generation(self) -> float:
         """Get power generation for next time step.

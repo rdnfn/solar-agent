@@ -5,8 +5,10 @@ from typing import List, Tuple
 import numpy as np
 import cvxpy as cp
 
+from solara.envs.components.base import EnvComponent
 
-class BatteryModel:
+
+class BatteryModel(EnvComponent):
     """Base battery model."""
 
 
@@ -28,6 +30,8 @@ class LithiumIonBattery(BatteryModel):
             time_step_len (float): time step length/duration of simulation in hours
                 (originally named T_u).
         """
+        super().__init__()
+
         self.size = size
         self.chemistry = chemistry
         self.time_step_len = time_step_len

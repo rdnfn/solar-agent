@@ -2,8 +2,10 @@
 
 import numpy as np
 
+from solara.envs.components.base import EnvComponent
 
-class LoadModel:
+
+class LoadModel(EnvComponent):
     """Base class for residential load models."""
 
     def get_next_load(self) -> float:
