@@ -4,10 +4,10 @@ from typing import Tuple
 import gym
 import numpy as np
 
-from solara.environment.batteries import BatteryModel
-from solara.environment.grids import GridModel
-from solara.environment.loads import LoadModel
-from solara.environment.photovoltaics import PVModel
+from solara.envs.components.battery import BatteryModel
+from solara.envs.components.grid import GridModel
+from solara.envs.components.load import LoadModel
+from solara.envs.components.solar import PVModel
 
 
 class BatteryControlEnv(gym.Env):
@@ -21,6 +21,7 @@ class BatteryControlEnv(gym.Env):
         load: LoadModel,
         episode_len: float = 24,
         time_step_len: float = 1,
+        grid_charging: bool = False,
     ) -> None:
         """A gym enviroment for controlling a battery in a PV installation.
 
@@ -49,6 +50,7 @@ class BatteryControlEnv(gym.Env):
 
         self.episode_len = episode_len
         self.time_step_len = time_step_len
+        self.grid_charging = grid_charging
 
         # Setting up action and observation space
 
@@ -106,6 +108,9 @@ class BatteryControlEnv(gym.Env):
         # Actions are proportion of max/min charging power, hence scale up
         if action > 0:
             action *= self.max_charge_power
+            if not self.grid_charging:
+                # If charging from grid not enabled, limit charging to solar generation
+                action = np.minimum(action, pv_generation)
         else:
             action *= -self.min_charge_power
 
