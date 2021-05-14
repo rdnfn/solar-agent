@@ -110,6 +110,7 @@ class BatteryControlEnv(gym.Env):
             type(action),
         )
         action = action[0]  # getting the float value
+        self.logger.debug("step action: %1.3f", action)
 
         # Get old state
         load, pv_generation, _, _, sum_load, sum_pv_gen = self.state
@@ -151,6 +152,10 @@ class BatteryControlEnv(gym.Env):
         observation = np.array(self.state)
 
         done = self.time_step >= self.episode_len
+
+        self.logger.debug(
+            "step return: obs: %s, rew: %6.3f, done: %s", observation, -cost, done
+        )
 
         return (observation, -cost, done, dict())
 
@@ -237,6 +242,8 @@ class BatteryControlEnv(gym.Env):
 
         if logging_level == "RAY":
             logging_level = logging.getLogger("ray.rllib").level
+
+        solara.utils.logging.setup_log_print_options()
 
         logging.basicConfig(level=logging_level)
         self.logger = logging.getLogger(type(self).__name__)
