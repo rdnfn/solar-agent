@@ -172,7 +172,7 @@ class BatteryControlEnv(gym.Env):
         self.load.reset()
         self.pv_system.reset()
 
-        self.logger.info("Environment reset.")
+        self.logger.debug("Environment reset.")
 
         return np.array(self.state)
 
