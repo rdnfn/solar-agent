@@ -182,8 +182,11 @@ class LithiumIonBattery(BatteryModel):
         # actual amount of power applied
         actual_power = new_c - new_d
 
-        self.logger.info(
-            "Battery charged with %6.4f kW (attempted %6.4f).", actual_power, power
+        self.logger.debug(
+            "Charged %6.4fkW (attempted %6.4f), new content %2.2fkWh",
+            actual_power,
+            power,
+            self.b,
         )
 
         return actual_power

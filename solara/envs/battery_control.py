@@ -25,6 +25,7 @@ class BatteryControlEnv(gym.Env):
         time_step_len: float = 1,
         grid_charging: bool = False,
         logging_level: str = "WARNING",
+        log_handler: logging.Handler = None,
     ) -> None:
         """A gym enviroment for controlling a battery in a PV installation.
 
@@ -82,7 +83,8 @@ class BatteryControlEnv(gym.Env):
             self.max_charge_power,
         ) = self.battery.get_charging_limits()
 
-        self._setup_logging(logging_level)
+        self._setup_logging(logging_level, log_handler)
+        self.logger.info("Environment initialised.")
 
         self.reset()
 
@@ -165,6 +167,8 @@ class BatteryControlEnv(gym.Env):
         self.load.reset()
         self.pv_system.reset()
 
+        self.logger.info("Environment reset.")
+
         return np.array(self.state)
 
     def render(self, mode: str = "human") -> None:
@@ -228,11 +232,20 @@ class BatteryControlEnv(gym.Env):
         """
         raise NotImplementedError
 
-    def _setup_logging(self, logging_level: str) -> None:
+    def _setup_logging(self, logging_level: str, log_handler: str = None) -> None:
         """Setup logger and handler."""
+
+        if logging_level == "RAY":
+            logging_level = logging.getLogger("ray.rllib").level
+
+        logging.basicConfig(level=logging_level)
         self.logger = logging.getLogger(type(self).__name__)
         self.logger.setLevel(logging_level)
-        self.log_handler = solara.utils.logging.OutputWidgetHandler()
+
+        if log_handler is None:
+            self.log_handler = solara.utils.logging.OutputWidgetHandler()
+        else:
+            self.log_handler = log_handler
         self.logger.addHandler(self.log_handler)
 
         for component in self.components:
