@@ -110,7 +110,7 @@ class BatteryControlEnv(gym.Env):
             type(action),
         )
         action = action[0]  # getting the float value
-        self.logger.debug("step action: %1.3f", action)
+        self.logger.debug("step - action: %1.3f", action)
 
         # Get old state
         load, pv_generation, _, _, sum_load, sum_pv_gen = self.state
@@ -129,6 +129,8 @@ class BatteryControlEnv(gym.Env):
         # Get the net load after accounting for power stream of battery and PV
         net_load = load + charging_power - pv_generation
         net_load = np.maximum(net_load, 0)
+
+        self.logger.debug("step - net load %s", net_load)
 
         # Draw remaining net load from grid and get price paid
         cost = self.grid.draw_power(power=net_load)
