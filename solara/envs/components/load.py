@@ -21,7 +21,11 @@ class DataLoad(LoadModel):
     """Model that samples load traces from data."""
 
     def __init__(
-        self, data_path: str, time_step_len: float = 1, num_steps: int = 24
+        self,
+        data_path: str,
+        time_step_len: float = 1,
+        num_steps: int = 24,
+        fixed_sample_num: int = None,
     ) -> None:
         """Load model that samples from data.
 
@@ -35,7 +39,7 @@ class DataLoad(LoadModel):
         self.data = np.loadtxt(data_path, delimiter=",")
         self.num_steps = num_steps
         self.time_step_len = time_step_len
-        self.fixed_start = None
+        self.fix_start(fixed_sample_num)
 
         self.reset()
 
@@ -81,6 +85,9 @@ class DataLoad(LoadModel):
         return self.episode_values[start_time:end_time]
 
     def fix_start(self, start: int = 0) -> None:
-        if start > len(self.data) // 24:
+        if start is None:
+            self.fixed_start = None
+        elif start > len(self.data) // 24:
             raise ValueError("Higher start index than days in data.")
-        self.fixed_start = start * 24
+        else:
+            self.fixed_start = start * 24
