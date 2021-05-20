@@ -83,6 +83,15 @@ class BatteryControlEnv(gym.Env):
             self.max_charge_power,
         ) = self.battery.get_charging_limits()
 
+        self.obs_keys = [
+            "load",
+            "pv_gen",
+            "energy_cont",
+            "time_step",
+            "cum_load",
+            "cum_pv_gen",
+        ]
+
         self._setup_logging(logging_level, log_handler)
         self.logger.info("Environment initialised.")
 
@@ -155,11 +164,13 @@ class BatteryControlEnv(gym.Env):
 
         done = self.time_step >= self.episode_len
 
+        info = {"net_load": net_load, "charging_power": charging_power}
+
         self.logger.debug(
             "step return: obs: %s, rew: %6.3f, done: %s", observation, -cost, done
         )
 
-        return (observation, -cost, done, dict())
+        return (observation, -cost, done, info)
 
     def reset(self) -> object:
         """Resets environment to initial state and returns an initial observation.
