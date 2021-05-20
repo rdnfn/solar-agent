@@ -43,12 +43,12 @@ def run_episode(
     while not done:
         action = agent.compute_action(obs, explore=explore)
         obs, reward, done, info = env.step(action)
-        actions.append(action)
+        actions.append(float(action))
         observations.append(obs)
         rewards.append(reward)
         infos.append(info)
 
-    return (observations, actions, rewards, infos)
+    return (observations, np.array(actions), np.array(rewards), infos)
 
 
 def run_episodes_from_checkpoints(
@@ -128,7 +128,7 @@ def get_info(key: str, infos: List[Dict]) -> List:
     for info in infos:
         data.append(info[key])
 
-    return data
+    return np.array(data)
 
 
 def get_episode_dict(
