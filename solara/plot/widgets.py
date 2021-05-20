@@ -18,18 +18,21 @@ class InteractiveEpisodes(widgets.VBox):
         """
 
         def plot_episode(episode_data: List[Dict] = None, iteration: int = 10) -> None:
-            solara.plot.pyplot.plot_episode(episode_data[iteration], show_grid=False)
+            solara.plot.pyplot.plot_episode(
+                episode_data[iteration - 1], show_grid=False
+            )
+
+        num_episodes = len(episode_data)
 
         play = widgets.Play(
-            value=0,
-            min=0,
-            max=10,
+            value=1,
+            min=1,
+            max=num_episodes,
             step=1,
             interval=400,
-            description="Press play",
             disabled=False,
         )
-        slider = widgets.IntSlider(0, 0, 10)
+        slider = widgets.IntSlider(1, 1, num_episodes)
         widgets.jslink((play, "value"), (slider, "value"))
 
         out = widgets.interactive_output(
