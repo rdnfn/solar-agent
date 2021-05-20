@@ -1,7 +1,9 @@
 """This module contains electrical grid models."""
 
+from solara.envs.components.base import EnvComponent
 
-class GridModel:
+
+class GridModel(EnvComponent):
     """Base class for grid models."""
 
     def transfer(self, power: float) -> float:
@@ -60,6 +62,8 @@ class PeakGrid(GridModel):
             peak_price (float): price charged if peak threshold is passed ($/kWh).
             time_step_len (float): duration of time step (in h).
         """
+        super().__init__()
+
         self.peak_threshold = peak_threshold
         self.peak_price = peak_price
         self.base_price = base_price

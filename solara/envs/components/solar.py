@@ -2,13 +2,11 @@
 
 import numpy as np
 
+from solara.envs.components.base import EnvComponent
 
-class PVModel:
+
+class PVModel(EnvComponent):
     """Base class for photovoltaic (PV) system models."""
-
-    def __init__(self) -> None:
-        """Base class for photovoltaic (PV) system models."""
-        pass
 
     def get_next_generation(self) -> float:
         """Get power generation for next time step.
@@ -34,7 +32,11 @@ class DataPV(PVModel):
     """Photovoltaic model that samples from data."""
 
     def __init__(
-        self, data_path: str, time_step_len: float = 1, num_steps: int = 24
+        self,
+        data_path: str,
+        time_step_len: float = 1,
+        num_steps: int = 24,
+        fixed_sample_num: int = None,
     ) -> None:
         """Photovoltaic model that samples from data.
 
@@ -48,7 +50,7 @@ class DataPV(PVModel):
         self.data = np.loadtxt(data_path, delimiter=",")
         self.num_steps = num_steps
         self.time_step_len = time_step_len
-        self.fixed_start = None
+        self.fix_start(fixed_sample_num)
 
         self.reset()
 
@@ -94,6 +96,9 @@ class DataPV(PVModel):
         return self.episode_values[start_time:end_time]
 
     def fix_start(self, start: int = 0) -> None:
-        if start > len(self.data) // 24:
+        if start is None:
+            self.fixed_start = None
+        elif start > len(self.data) // 24:
             raise ValueError("Higher start index than days in data.")
-        self.fixed_start = start * 24
+        else:
+            self.fixed_start = start * 24

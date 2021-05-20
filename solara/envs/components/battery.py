@@ -5,8 +5,10 @@ from typing import List, Tuple
 import numpy as np
 import cvxpy as cp
 
+from solara.envs.components.base import EnvComponent
 
-class BatteryModel:
+
+class BatteryModel(EnvComponent):
     """Base battery model."""
 
 
@@ -28,6 +30,8 @@ class LithiumIonBattery(BatteryModel):
             time_step_len (float): time step length/duration of simulation in hours
                 (originally named T_u).
         """
+        super().__init__()
+
         self.size = size
         self.chemistry = chemistry
         self.time_step_len = time_step_len
@@ -142,8 +146,8 @@ class LithiumIonBattery(BatteryModel):
 
     def get_charging_limits(self) -> Tuple[float, float]:
         """Get general maximum and minimum charging constraints."""
-        max_charge_power = self.num_cells * self.alpha_c * self.nominal_voltage_c
-        min_charge_power = -(self.num_cells * self.alpha_d * self.nominal_voltage_d)
+        max_charge_power = self.size
+        min_charge_power = -self.size
 
         return min_charge_power, max_charge_power
 
@@ -175,8 +179,17 @@ class LithiumIonBattery(BatteryModel):
             - new_d * self.eta_d * self.time_step_len
         )
 
-        # return the actual amount of power applied
-        return new_c - new_d
+        # actual amount of power applied
+        actual_power = new_c - new_d
+
+        self.logger.debug(
+            "Charged %6.4fkW (attempted %6.4f), new content %2.2fkWh",
+            actual_power,
+            power,
+            self.b,
+        )
+
+        return actual_power
 
     def get_energy_content(self) -> None:
         """Return the current energy content."""

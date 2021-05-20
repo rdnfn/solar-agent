@@ -1,13 +1,15 @@
 """Module with battery control environment of a photovoltaic installation."""
 
 from typing import Tuple
+import logging
 import gym
 import numpy as np
 
-from solara.environment.batteries import BatteryModel
-from solara.environment.grids import GridModel
-from solara.environment.loads import LoadModel
-from solara.environment.photovoltaics import PVModel
+import solara.utils.logging
+from solara.envs.components.battery import BatteryModel
+from solara.envs.components.grid import GridModel
+from solara.envs.components.load import LoadModel
+from solara.envs.components.solar import PVModel
 
 
 class BatteryControlEnv(gym.Env):
@@ -21,6 +23,9 @@ class BatteryControlEnv(gym.Env):
         load: LoadModel,
         episode_len: float = 24,
         time_step_len: float = 1,
+        grid_charging: bool = False,
+        logging_level: str = "WARNING",
+        log_handler: logging.Handler = None,
     ) -> None:
         """A gym enviroment for controlling a battery in a PV installation.
 
@@ -42,13 +47,16 @@ class BatteryControlEnv(gym.Env):
         want a narrower range. The methods are accessed publicly as "step", "reset",
         etc...
         """
+
         self.battery = battery
         self.pv_system = pv_system
         self.grid = grid
         self.load = load
+        self.components = [battery, pv_system, grid, load]
 
         self.episode_len = episode_len
         self.time_step_len = time_step_len
+        self.grid_charging = grid_charging
 
         # Setting up action and observation space
 
@@ -75,6 +83,18 @@ class BatteryControlEnv(gym.Env):
             self.max_charge_power,
         ) = self.battery.get_charging_limits()
 
+        self.obs_keys = [
+            "load",
+            "pv_gen",
+            "energy_cont",
+            "time_step",
+            "cum_load",
+            "cum_pv_gen",
+        ]
+
+        self._setup_logging(logging_level, log_handler)
+        self.logger.info("Environment initialised.")
+
         self.reset()
 
     def step(self, action: object) -> Tuple[object, float, bool, dict]:
@@ -99,6 +119,7 @@ class BatteryControlEnv(gym.Env):
             type(action),
         )
         action = action[0]  # getting the float value
+        self.logger.debug("step - action: %1.3f", action)
 
         # Get old state
         load, pv_generation, _, _, sum_load, sum_pv_gen = self.state
@@ -106,6 +127,9 @@ class BatteryControlEnv(gym.Env):
         # Actions are proportion of max/min charging power, hence scale up
         if action > 0:
             action *= self.max_charge_power
+            if not self.grid_charging:
+                # If charging from grid not enabled, limit charging to solar generation
+                action = np.minimum(action, pv_generation)
         else:
             action *= -self.min_charge_power
 
@@ -114,6 +138,8 @@ class BatteryControlEnv(gym.Env):
         # Get the net load after accounting for power stream of battery and PV
         net_load = load + charging_power - pv_generation
         net_load = np.maximum(net_load, 0)
+
+        self.logger.debug("step - net load %s", net_load)
 
         # Draw remaining net load from grid and get price paid
         cost = self.grid.draw_power(power=net_load)
@@ -138,7 +164,13 @@ class BatteryControlEnv(gym.Env):
 
         done = self.time_step >= self.episode_len
 
-        return (observation, -cost, done, dict())
+        info = {"net_load": net_load, "charging_power": charging_power}
+
+        self.logger.debug(
+            "step return: obs: %s, rew: %6.3f, done: %s", observation, -cost, done
+        )
+
+        return (observation, -cost, done, info)
 
     def reset(self) -> object:
         """Resets environment to initial state and returns an initial observation.
@@ -152,6 +184,8 @@ class BatteryControlEnv(gym.Env):
         self.battery.reset()
         self.load.reset()
         self.pv_system.reset()
+
+        self.logger.debug("Environment reset.")
 
         return np.array(self.state)
 
@@ -215,3 +249,25 @@ class BatteryControlEnv(gym.Env):
               this won't be true if seed=None, for example.
         """
         raise NotImplementedError
+
+    def _setup_logging(self, logging_level: str, log_handler: str = None) -> None:
+        """Setup logger and handler."""
+
+        if logging_level == "RAY":
+            logging_level = logging.getLogger("ray.rllib").level
+
+        solara.utils.logging.setup_log_print_options()
+
+        logging.basicConfig(level=logging_level)
+        self.logger = logging.getLogger(type(self).__name__)
+        self.logger.setLevel(logging_level)
+
+        if log_handler is None:
+            self.log_handler = solara.utils.logging.OutputWidgetHandler()
+        else:
+            self.log_handler = log_handler
+        self.logger.addHandler(self.log_handler)
+
+        for component in self.components:
+            component.set_log_handler(self.log_handler)
+            component.set_log_level(logging_level)
