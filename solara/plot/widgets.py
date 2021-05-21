@@ -1,6 +1,6 @@
 """Widgets for visualising episodes in environments."""
 
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import ipywidgets as widgets
 
@@ -33,16 +33,32 @@ class InteractiveEpisodes(widgets.HBox):
         widgets.jslink((play, "value"), (slider, "value"))
 
         checkboxes = self._create_visibility_checkboxes()
+        y_range_slider = widgets.FloatRangeSlider(
+            value=[-2.5, 4],
+            min=-10,
+            max=10.0,
+            step=0.1,
+            description="y-axis range",
+            disabled=False,
+            continuous_update=False,
+            orientation="vertical",
+            readout=True,
+            readout_format=".1f",
+        )
 
         checkbox_box = widgets.Accordion(
-            children=[widgets.VBox([*checkboxes.values()])],
+            children=[widgets.VBox([*checkboxes.values()]), y_range_slider],
         )
         checkbox_box.set_title(index=0, title="Visibility")
+        checkbox_box.set_title(index=1, title="Other settings")
 
         out = widgets.interactive_output(
             self._plot_episode,
             dict(
-                iteration=slider, episode_data=widgets.fixed(episode_data), **checkboxes
+                iteration=slider,
+                episode_data=widgets.fixed(episode_data),
+                y_range=y_range_slider,
+                **checkboxes,
             ),
         )
         children = [widgets.VBox([widgets.HBox([play, slider]), out]), checkbox_box]
@@ -60,7 +76,11 @@ class InteractiveEpisodes(widgets.HBox):
         return checkboxes
 
     def _plot_episode(
-        self, episode_data: List[Dict] = None, iteration: int = 10, **kwargs
+        self,
+        episode_data: List[Dict] = None,
+        iteration: int = 10,
+        y_range: Tuple[float, float] = (-2.5, 4),
+        **kwargs
     ) -> None:
         """[summary]
 
@@ -82,6 +102,8 @@ class InteractiveEpisodes(widgets.HBox):
             show_grid=False,
             selected_keys=selected_keys,
             title=None,
+            y_min=y_range[0],
+            y_max=y_range[1],
         )
 
         self._print_episode_data(single_episode_data)
