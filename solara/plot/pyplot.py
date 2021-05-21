@@ -1,6 +1,6 @@
 """This module contains functions that visualise solar agent control."""
 from __future__ import annotations
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,13 +10,14 @@ def plot_episode(
     data: Dict[str, np.array],
     colors: Dict[str, str] = None,
     labels: Dict[str, str] = None,
+    selected_keys: List[str] = None,
     num_timesteps: int = 25,
     iteration: int = None,
     title: str = "Episode Trajectory",
-    y_max: float = 2,
+    y_max: float = 4,
     y_min: float = -2.5,
     show_grid: bool = True,
-    figsize: Tuple = (6, 4),
+    figsize: Tuple = (6, 6),
     rewards_key: str = "rewards",
     dpi: int = 100,
 ):
@@ -62,28 +63,33 @@ def plot_episode(
 
     # Plotting the data
     for name, values in data.items():
+        if selected_keys is None or name in selected_keys:
+            if name in colors.keys():
+                color = colors[name]
+            else:
+                color = None
 
-        if name in colors.keys():
-            color = colors[name]
+            if name in labels.keys():
+                label = labels[name]
+            else:
+                label = name
+
+            ax.plot(values, label=label, marker=".", color=color)
+
+    if title is not None:
+        if iteration is not None:
+            iteration_str = "Iteration {:2.0f}, ".format(iteration)
         else:
-            color = None
+            iteration_str = ""
+        if episode_reward is not None:
+            title += "    ({}Overall reward: {:.3f})".format(
+                iteration_str, episode_reward
+            )
 
-        if name in labels.keys():
-            label = labels[name]
-        else:
-            label = name
-
-        ax.plot(values, label=label, marker=".", color=color)
-
-    if iteration is not None:
-        iteration_str = "Iteration {:2.0f}, ".format(iteration)
-    else:
-        iteration_str = ""
-    if episode_reward is not None:
-        title += "    ({}Overall reward: {:.3f})".format(iteration_str, episode_reward)
-
-    plt.title(title)
+        plt.title(title)
     plt.ylabel("kW / kWh / other")
     plt.legend()
 
     plt.ylim(ymin=y_min, ymax=y_max)
+
+    plt.show()

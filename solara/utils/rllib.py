@@ -72,7 +72,7 @@ def run_episodes_from_checkpoints(
 
     for i in range(1, final_iter_num + 1):
         agent.restore(
-            check_save_path + "/checkpoint_0000{i:02.0f}/checkpoint-{i}".format(i=i)
+            check_save_path + "/checkpoint_{i:06.0f}/checkpoint-{i}".format(i=i)
         )
         observations, actions, rewards, infos = run_episode(agent)
         episode_dict = get_episode_dict(
@@ -160,9 +160,9 @@ def get_episode_dict(
         Dict: dictionary used for plotting.
     """
     if obs_keys is None:
-        obs_keys = ["load", "pv_gen", "energy_cont"]
+        obs_keys = all_obs_keys
     if info_keys is None:
-        info_keys = ["net_load", "charging_power"]
+        info_keys = infos[0].keys()
 
     obs_dict = create_obs_dict(observations, all_obs_keys)
     episode_dict = dict((key, obs_dict[key]) for key in obs_keys if key in obs_dict)
