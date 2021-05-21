@@ -160,9 +160,9 @@ def get_episode_dict(
         Dict: dictionary used for plotting.
     """
     if obs_keys is None:
-        obs_keys = ["load", "pv_gen", "energy_cont"]
+        obs_keys = all_obs_keys
     if info_keys is None:
-        info_keys = ["net_load", "charging_power"]
+        info_keys = infos[0].keys()
 
     obs_dict = create_obs_dict(observations, all_obs_keys)
     episode_dict = dict((key, obs_dict[key]) for key in obs_keys if key in obs_dict)
