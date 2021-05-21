@@ -24,6 +24,7 @@ class BatteryControlEnv(gym.Env):
         episode_len: float = 24,
         time_step_len: float = 1,
         grid_charging: bool = False,
+        infeasible_control_penalty: bool = False,
         logging_level: str = "WARNING",
         log_handler: logging.Handler = None,
     ) -> None:
@@ -57,6 +58,7 @@ class BatteryControlEnv(gym.Env):
         self.episode_len = episode_len
         self.time_step_len = time_step_len
         self.grid_charging = grid_charging
+        self.infeasible_control_penalty = infeasible_control_penalty
 
         # Setting up action and observation space
 
@@ -127,11 +129,14 @@ class BatteryControlEnv(gym.Env):
         # Actions are proportion of max/min charging power, hence scale up
         if action > 0:
             action *= self.max_charge_power
-            if not self.grid_charging:
-                # If charging from grid not enabled, limit charging to solar generation
-                action = np.minimum(action, pv_generation)
         else:
             action *= -self.min_charge_power
+
+        attempted_action = action.copy()
+
+        if not self.grid_charging:
+            # If charging from grid not enabled, limit charging to solar generation
+            action = np.minimum(action, pv_generation)
 
         charging_power = self.battery.charge(power=action)
 
@@ -139,10 +144,19 @@ class BatteryControlEnv(gym.Env):
         net_load = load + charging_power - pv_generation
         net_load = np.maximum(net_load, 0)
 
-        self.logger.debug("step - net load %s", net_load)
+        self.logger.debug("step - net load: %s", net_load)
 
         # Draw remaining net load from grid and get price paid
         cost = self.grid.draw_power(power=net_load)
+
+        reward = -cost
+
+        # Add impossible control penalty to cost
+        if self.infeasible_control_penalty:
+            power_diff = np.abs(charging_power - float(attempted_action))
+            reward -= power_diff
+            self.logger.debug("step - cost: %6.3f, power_diff: %6.3f", cost, power_diff)
+        self.logger.debug("I am here")
 
         # Get load and PV generation for next time step
         load = self.load.get_next_load()
@@ -164,13 +178,19 @@ class BatteryControlEnv(gym.Env):
 
         done = self.time_step >= self.episode_len
 
-        info = {"net_load": net_load, "charging_power": charging_power}
+        info = {
+            "net_load": net_load,
+            "charging_power": charging_power,
+            "cost": cost,
+            "power_diff": power_diff,
+        }
+        self.logger.debug("step - info %s", info)
 
         self.logger.debug(
-            "step return: obs: %s, rew: %6.3f, done: %s", observation, -cost, done
+            "step return: obs: %s, rew: %6.3f, done: %s", observation, reward, done
         )
 
-        return (observation, -cost, done, info)
+        return (observation, reward, done, info)
 
     def reset(self) -> object:
         """Resets environment to initial state and returns an initial observation.
