@@ -72,7 +72,7 @@ def run_episodes_from_checkpoints(
 
     for i in range(1, final_iter_num + 1):
         agent.restore(
-            check_save_path + "/checkpoint_0000{i:02.0f}/checkpoint-{i}".format(i=i)
+            check_save_path + "/checkpoint_{i:06.0f}/checkpoint-{i}".format(i=i)
         )
         observations, actions, rewards, infos = run_episode(agent)
         episode_dict = get_episode_dict(
