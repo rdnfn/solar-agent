@@ -88,7 +88,7 @@ class InteractiveEpisodes(widgets.HBox):
 
     def _print_episode_data(self, single_episode_data: Dict) -> None:
         print(
-            "Overall - Rewards: {:.3f}, Cost: {:.3f}, Power_diff: {:.3f}".format(
+            "Overall - Rewards: {:.3f}, Cost: {:.3f}, Power_diff: {:.6f}".format(
                 sum(single_episode_data["rewards"]),
                 sum(single_episode_data["cost"]),
                 sum(single_episode_data["power_diff"]),
