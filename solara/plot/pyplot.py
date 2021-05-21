@@ -14,10 +14,10 @@ def plot_episode(
     num_timesteps: int = 25,
     iteration: int = None,
     title: str = "Episode Trajectory",
-    y_max: float = 2,
+    y_max: float = 4,
     y_min: float = -2.5,
     show_grid: bool = True,
-    figsize: Tuple = (6, 4),
+    figsize: Tuple = (6, 6),
     rewards_key: str = "rewards",
     dpi: int = 100,
 ):
