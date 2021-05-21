@@ -94,3 +94,4 @@ io/
 # Project data
 data/
 notebooks/*/tmp/*
+notebooks/*/*.large.ipynb
