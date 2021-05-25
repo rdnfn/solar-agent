@@ -10,6 +10,7 @@ import glob
 
 if TYPE_CHECKING:
     import ray.rllib.agents.trainer
+    import gym
 
 
 def run_episode(
@@ -174,3 +175,39 @@ def get_episode_dict(
     episode_dict["actions"] = actions
 
     return episode_dict
+
+
+class DeterministicAgent:
+    """Deterministic Agent."""
+
+    def __init__(self, actions: List, env: gym.Env) -> None:
+        """Deterministic Agent.
+
+        Args:
+            actions (List): list of actions the agent takes
+            env (gym.Env): environment of the agent
+        """
+        self.actions = actions
+        self.env = env
+        self.step = 0
+
+    def compute_action(
+        self, obs: object, explore: bool = False
+    ):  # pylint: disable=unused-argument
+        """Get action.
+
+        Args:
+            obs (object): observations
+            explore (bool, optional): Whether to explore, has no effect.
+                Defaults to False.
+
+        Returns:
+            np.array: action taken by agent
+        """
+
+        action = self.actions[self.step]
+        self.step += 1
+        return action
+
+    def env_creator(self) -> gym.Env:
+        return self.env
