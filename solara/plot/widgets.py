@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple
 import ipywidgets as widgets
 
 import solara.plot.pyplot
+from solara.plot.constants import LABELS
 
 
 class InteractiveEpisodes(widgets.HBox):
@@ -65,11 +66,22 @@ class InteractiveEpisodes(widgets.HBox):
 
         super().__init__(children=children)
 
-    def _create_visibility_checkboxes(self) -> object:
+    def _create_visibility_checkboxes(self) -> Dict:
+        """Create visibility checkboxes.
+
+        This method creates a checkbox for each (potential) plotted line in the widget.
+
+        Returns:
+            Dict: dictionary of checkbox widgets
+        """
         checkboxes = {}
         for key in self.episode_data[0].keys():
+            if key in LABELS.keys():
+                label = LABELS[key]
+            else:
+                label = key
             checkbox = widgets.Checkbox(
-                value=True, description=key, disabled=False, indent=False
+                value=True, description=label, disabled=False, indent=False
             )
             checkboxes[key] = checkbox
 
@@ -82,14 +94,16 @@ class InteractiveEpisodes(widgets.HBox):
         y_range: Tuple[float, float] = (-2.5, 4),
         **kwargs
     ) -> None:
-        """[summary]
-
-        [extended_summary]
+        """Plot an episode for a given iteration.
 
         Args:
-            episode_data (List[Dict], optional): [description]. Defaults to None.
-            iteration (int, optional): [description]. Defaults to 10.
+            episode_data (List[Dict], optional): data from multiple episodes.
+                Defaults to None.
+            iteration (int, optional): iteration to plot. Defaults to 10.
+            y_range (Tuple[float, float], optional): Range of y axis in plot.
+                Defaults to (-2.5, 4).
         """
+
         selected_keys = []
         for key, selected in kwargs.items():
             if selected:
