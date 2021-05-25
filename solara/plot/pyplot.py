@@ -67,7 +67,12 @@ def plot_episode(
             else:
                 label = name
 
-            ax.plot(values, label=label, marker=".", color=color)
+            if name in markers.keys():
+                marker = markers[name]
+            else:
+                marker = "."
+
+            ax.plot(values, label=label, marker=marker, color=color)
 
     if title is not None:
         if iteration is not None:
