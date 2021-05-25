@@ -1,15 +1,18 @@
 """Module with battery control environment of a photovoltaic installation."""
+from __future__ import annotations
 
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 import logging
 import gym
 import numpy as np
 
 import solara.utils.logging
-from solara.envs.components.battery import BatteryModel
-from solara.envs.components.grid import GridModel
-from solara.envs.components.load import LoadModel
-from solara.envs.components.solar import PVModel
+
+if TYPE_CHECKING:
+    from solara.envs.components.battery import BatteryModel
+    from solara.envs.components.grid import GridModel
+    from solara.envs.components.load import LoadModel
+    from solara.envs.components.solar import PVModel
 
 
 class BatteryControlEnv(gym.Env):
@@ -183,6 +186,8 @@ class BatteryControlEnv(gym.Env):
             "cost": cost,
             "power_diff": power_diff,
         }
+        info = {**info, **self.grid.get_info()}
+
         self.logger.debug("step - info %s", info)
 
         self.logger.debug(
