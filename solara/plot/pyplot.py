@@ -5,11 +5,14 @@ from typing import Tuple, Dict, List
 import numpy as np
 import matplotlib.pyplot as plt
 
+from solara.plot.constants import COLORS, LABELS, MARKERS
+
 
 def plot_episode(
     data: Dict[str, np.array],
     colors: Dict[str, str] = None,
     labels: Dict[str, str] = None,
+    markers: Dict[str, str] = None,
     selected_keys: List[str] = None,
     num_timesteps: int = 25,
     iteration: int = None,
@@ -24,23 +27,13 @@ def plot_episode(
     """Plot a single episode of battery control problem."""
 
     if colors is None:
-        colors = {
-            "load": "blue",
-            "pv_gen": "green",
-            "energy_cont": "black",
-            "actions": "red",
-            "rewards": "purple",
-        }
+        colors = COLORS
 
     if labels is None:
-        labels = {
-            "load": "Load (kW)",
-            "pv_gen": "PV generation (kW)",
-            "energy_cont": "Energy cont. (kWh)",
-            "actions": "Actions",
-            "rewards": "Rewards ($)",
-            "net_load": "Net load (kW)",
-        }
+        labels = LABELS
+
+    if markers is None:
+        markers = MARKERS
 
     x = np.arange(0, num_timesteps)
 
