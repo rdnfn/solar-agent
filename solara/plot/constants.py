@@ -7,6 +7,9 @@ LABELS = {
     "actions": "Actions",
     "rewards": "Rewards ($)",
     "net_load": "Net load (kW)",
+    "cost": "Cost ($)",
+    "charging_power": "Charging Power (kW)",
+    "power_diff": "Infeasible control (kW)",
 }
 
 COLORS = {
