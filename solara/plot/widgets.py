@@ -11,11 +11,15 @@ from solara.plot.constants import LABELS
 class InteractiveEpisodes(widgets.HBox):
     """Interactive episode widget."""
 
-    def __init__(self, episode_data: List[Dict]) -> None:
+    def __init__(
+        self, episode_data: List[Dict], initial_visibility: List[str] = None
+    ) -> None:
         """Interactive episode widget.
 
         Args:
             episode_data (List[Dict]): list of dictionaries containing episode data.
+            initial_visibility (List[str], optional): which values to plot initially.
+                Defaults to None, which makes all lines visible.
         """
 
         self.episode_data = episode_data
@@ -33,7 +37,7 @@ class InteractiveEpisodes(widgets.HBox):
         slider = widgets.IntSlider(1, 1, num_episodes)
         widgets.jslink((play, "value"), (slider, "value"))
 
-        checkboxes = self._create_visibility_checkboxes()
+        checkboxes = self._create_visibility_checkboxes(initial_visibility)
         y_range_slider = widgets.FloatRangeSlider(
             value=[-2.5, 4],
             min=-10,
@@ -66,7 +70,7 @@ class InteractiveEpisodes(widgets.HBox):
 
         super().__init__(children=children)
 
-    def _create_visibility_checkboxes(self) -> Dict:
+    def _create_visibility_checkboxes(self, initial_visibility: List[str]) -> Dict:
         """Create visibility checkboxes.
 
         This method creates a checkbox for each (potential) plotted line in the widget.
@@ -80,8 +84,14 @@ class InteractiveEpisodes(widgets.HBox):
                 label = LABELS[key]
             else:
                 label = key
+
+            if initial_visibility is None:
+                value = True
+            else:
+                value = bool(key in initial_visibility)
+
             checkbox = widgets.Checkbox(
-                value=True, description=label, disabled=False, indent=False
+                value=value, description=label, disabled=False, indent=False
             )
             checkboxes[key] = checkbox
 
