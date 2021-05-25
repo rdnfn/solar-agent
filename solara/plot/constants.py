@@ -8,8 +8,12 @@ LABELS = {
     "rewards": "Rewards ($)",
     "net_load": "Net load (kW)",
     "cost": "Cost ($)",
-    "charging_power": "Charging Power (kW)",
-    "power_diff": "Infeasible control (kW)",
+    "price_threshold": "Price threshold ($)",
+    "charging_power": "Charging power (kW)",
+    "power_diff": "Infeas. control (kW)",
+    "time_step": "Time step (h)",
+    "cum_load": "Cum. load (kW)",
+    "cum_pv_gen": "Cum. PV gen. (KW)",
 }
 
 COLORS = {
