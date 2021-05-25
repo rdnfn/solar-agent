@@ -156,7 +156,6 @@ class BatteryControlEnv(gym.Env):
             power_diff = np.abs(charging_power - float(attempted_action))
             reward -= power_diff
             self.logger.debug("step - cost: %6.3f, power_diff: %6.3f", cost, power_diff)
-        self.logger.debug("I am here")
 
         # Get load and PV generation for next time step
         load = self.load.get_next_load()
