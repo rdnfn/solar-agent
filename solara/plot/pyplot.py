@@ -20,7 +20,7 @@ def plot_episode(
     y_max: float = 4,
     y_min: float = -2.5,
     show_grid: bool = True,
-    figsize: Tuple = (6, 6),
+    figsize: Tuple = (6, 4),
     rewards_key: str = "rewards",
     dpi: int = 100,
 ):
@@ -86,7 +86,7 @@ def plot_episode(
 
         plt.title(title)
     plt.ylabel("kW / kWh / other")
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1, 1), loc="upper left")
 
     plt.ylim(ymin=y_min, ymax=y_max)
 
