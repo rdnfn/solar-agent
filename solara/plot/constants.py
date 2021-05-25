@@ -22,6 +22,7 @@ COLORS = {
     "energy_cont": "black",
     "actions": "red",
     "rewards": "purple",
+    "price_threshold": (0.3, 0.3, 0.3, 0.3),
 }
 
 MARKERS = {
