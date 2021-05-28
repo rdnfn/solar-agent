@@ -139,7 +139,7 @@ class BatteryControlEnv(gym.Env):
         else:
             action *= -self.min_charge_power
 
-        attempted_action = action.copy()
+        attempted_action = action
 
         if not self.grid_charging:
             # If charging from grid not enabled, limit charging to solar generation
