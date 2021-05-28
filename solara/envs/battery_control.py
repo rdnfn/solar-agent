@@ -65,23 +65,27 @@ class BatteryControlEnv(gym.Env):
 
         # Setting up action and observation space
 
-        # Observations have the following elements:
-        # current load, current generation, battery content, time step,
-        # cumulative load, cumulative gen
-        low = np.zeros(6)
-        high = np.array(
-            [
-                np.finfo(np.float32).max,
-                np.finfo(np.float32).max,
-                np.finfo(np.float32).max,
-                self.episode_len,
-                np.finfo(np.float32).max,
-                np.finfo(np.float32).max,
-            ],
-            dtype=np.float32,
-        )
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float32)
-        self.observation_space = gym.spaces.Box(low, high, dtype=np.float32)
+
+        spaces = {
+            "load": gym.spaces.Box(
+                low=0, high=np.finfo(np.float32).max, shape=(1,), dtype=np.float32
+            ),
+            "pv_gen": gym.spaces.Box(
+                low=0, high=np.finfo(np.float32).max, shape=(1,), dtype=np.float32
+            ),
+            "battery_cont": gym.spaces.Box(
+                low=0, high=self.battery.size, shape=(1,), dtype=np.float32
+            ),
+            "time_step": gym.spaces.Discrete(self.episode_len + 1),
+            "cum_load": gym.spaces.Box(
+                low=0, high=np.finfo(np.float32).max, shape=(1,), dtype=np.float32
+            ),
+            "cum_pv_gen": gym.spaces.Box(
+                low=0, high=np.finfo(np.float32).max, shape=(1,), dtype=np.float32
+            ),
+        }
+        self.observation_space = gym.spaces.Dict(spaces)
 
         (
             self.min_charge_power,
@@ -91,7 +95,7 @@ class BatteryControlEnv(gym.Env):
         self.obs_keys = [
             "load",
             "pv_gen",
-            "energy_cont",
+            "battery_cont",
             "time_step",
             "cum_load",
             "cum_pv_gen",
@@ -123,11 +127,11 @@ class BatteryControlEnv(gym.Env):
             action,
             type(action),
         )
-        action = action[0]  # getting the float value
+        action = float(action)  # getting the float value
         self.logger.debug("step - action: %1.3f", action)
 
         # Get old state
-        load, pv_generation, _, _, sum_load, sum_pv_gen = self.state
+        load, pv_generation, _, _, sum_load, sum_pv_gen = self.state.values()
 
         # Actions are proportion of max/min charging power, hence scale up
         if action > 0:
@@ -168,15 +172,18 @@ class BatteryControlEnv(gym.Env):
         sum_pv_gen += pv_generation
         self.time_step += 1
 
-        self.state = (
-            load,
-            pv_generation,
-            self.battery.get_energy_content(),
-            self.time_step,
-            sum_load,
-            sum_pv_gen,
-        )
-        observation = np.array(self.state)
+        observation = {
+            "load": np.array([load], dtype=np.float32),
+            "pv_gen": np.array([pv_generation], dtype=np.float32),
+            "battery_cont": np.array(
+                [self.battery.get_energy_content()], dtype=np.float32
+            ),
+            "time_step": int(self.time_step),
+            "cum_load": sum_load,
+            "cum_pv_gen": sum_pv_gen,
+        }
+
+        self.state = observation
 
         done = self.time_step >= self.episode_len
 
@@ -194,7 +201,7 @@ class BatteryControlEnv(gym.Env):
             "step return: obs: %s, rew: %6.3f, done: %s", observation, reward, done
         )
 
-        return (observation, reward, done, info)
+        return (observation, float(reward), done, info)
 
     def reset(self) -> object:
         """Resets environment to initial state and returns an initial observation.
@@ -202,8 +209,15 @@ class BatteryControlEnv(gym.Env):
         Returns:
             observation (object): the initial observation.
         """
-        self.state = np.zeros(6)
-        self.time_step = 0
+        self.state = {
+            "load": np.array([0.0], dtype=np.float32),
+            "pv_gen": np.array([0.0], dtype=np.float32),
+            "battery_cont": np.array([0.0], dtype=np.float32),
+            "time_step": 0,
+            "cum_load": np.array([0.0], dtype=np.float32),
+            "cum_pv_gen": np.array([0.0], dtype=np.float32),
+        }
+        self.time_step = np.array([0])
 
         self.battery.reset()
         self.load.reset()
@@ -211,7 +225,7 @@ class BatteryControlEnv(gym.Env):
 
         self.logger.debug("Environment reset.")
 
-        return np.array(self.state)
+        return self.state
 
     def render(self, mode: str = "human") -> None:
         """Renders the environment.
