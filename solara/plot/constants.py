@@ -3,7 +3,7 @@
 LABELS = {
     "load": "Load (kW)",
     "pv_gen": "PV generation (kW)",
-    "energy_cont": "Energy cont. (kWh)",
+    "battery_cont": "Energy cont. (kWh)",
     "actions": "Actions",
     "rewards": "Rewards ($)",
     "net_load": "Net load (kW)",
