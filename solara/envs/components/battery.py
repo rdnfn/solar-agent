@@ -42,11 +42,11 @@ class LithiumIonBattery(BatteryModel):
         self.nominal_voltage_c = None
         self.nominal_voltage_d = None
 
-        self.a1_slope = None
-        self.a1_intercept = None
+        self.u1 = None
+        self.v1_bar = None
 
-        self.a2_slope = None
-        self.a2_intercept = None
+        self.u2 = None
+        self.v2_bar = None
 
         self.eta_d = None
         self.eta_c = None
@@ -57,7 +57,7 @@ class LithiumIonBattery(BatteryModel):
         self.set_parameters()
 
         # battery energy content
-        self.b = self.a1_intercept
+        self.b = self.v1_bar
 
     def set_parameters(self):
         """Set battery model parameters according to specified Li-Ion chemistry."""
@@ -71,17 +71,17 @@ class LithiumIonBattery(BatteryModel):
             # charging and discharging
             self.nominal_voltage_c = 3.8793
             self.nominal_voltage_d = 3.5967
-            self.a1_slope = 0.1920
-            self.a1_intercept = 0.0
-            self.a2_slope = -0.4865
-            self.a2_intercept = self.kWh_per_cell * self.num_cells
+            self.u1 = 0.1920
+            self.v1_bar = 0.0
+            self.u2 = -0.4865
+            self.v2_bar = self.kWh_per_cell * self.num_cells
             self.eta_d = 1 / 0.9  # taking reciprocal so that we don't divide by eta_d
             self.eta_c = 0.9942
             self.alpha_bar_d = (
-                self.a2_intercept * 1
+                self.v2_bar * 1
             )  # the 1 indicates the maximum discharging C-rate
             self.alpha_bar_c = (
-                self.a2_intercept * 1
+                self.v2_bar * 1
             )  # the 1 indicates the maximum charging C-rate
 
         elif self.chemistry == "LTO":
@@ -90,16 +90,16 @@ class LithiumIonBattery(BatteryModel):
             self.num_cells = self.size / self.kWh_per_cell
             self.nominal_voltage_c = 2.3624
             self.nominal_voltage_d = 2.0759
-            self.a1_slope = 0.1559
-            self.a1_intercept = 0.0
-            self.a2_slope = -0.0351
-            self.a2_intercept = self.kWh_per_cell * self.num_cells
+            self.u1 = 0.1559
+            self.v1_bar = 0.0
+            self.u2 = -0.0351
+            self.v2_bar = self.kWh_per_cell * self.num_cells
             self.eta_d = (
                 1 / 0.9716
             )  # taking reciprocal so that we don't divide by eta_d
             self.eta_c = 0.9741
-            self.alpha_bar_d = self.a2_intercept * 2
-            self.alpha_bar_c = self.a2_intercept * 2
+            self.alpha_bar_d = self.v2_bar * 2
+            self.alpha_bar_c = self.v2_bar * 2
 
         else:
             print("chemistry is not supported")
@@ -120,7 +120,7 @@ class LithiumIonBattery(BatteryModel):
         """
         # Implements constraint (4)
         for c in np.linspace(power, 0, num=30):
-            upper_lim = self.a2_slope * (c / self.nominal_voltage_c) + self.a2_intercept
+            upper_lim = self.u2 * (c / self.nominal_voltage_c) + self.v2_bar
             b_temp = self.b + c * self.eta_c * self.time_step_len
             if b_temp <= upper_lim:
                 return c
@@ -140,7 +140,7 @@ class LithiumIonBattery(BatteryModel):
         """
         # Implements constraint (4)
         for d in np.linspace(power, 0, num=30):
-            lower_lim = self.a1_slope * (d / self.nominal_voltage_d) + self.a1_intercept
+            lower_lim = self.u1 * (d / self.nominal_voltage_d) + self.v1_bar
             b_temp = self.b - d * self.eta_d * self.time_step_len
             if b_temp >= lower_lim:
                 return d
@@ -200,7 +200,7 @@ class LithiumIonBattery(BatteryModel):
 
     def reset(self) -> None:
         """Reset battery energy content."""
-        self.b = self.a1_intercept
+        self.b = self.v1_bar
 
     def get_contraints(
         self, power_episode: cp.Variable, battery_content_episode: cp.Variable
@@ -228,9 +228,9 @@ class LithiumIonBattery(BatteryModel):
             self.alpha_bar_d <= power_episode,
             self.alpha_bar_c >= power_episode,
             # constraint in Equation (22)
-            self.a1_slope * power_episode / self.nominal_voltage_d + self.a1_intercept
+            self.u1 * power_episode / self.nominal_voltage_d + self.v1_bar
             <= battery_content_episode,
-            self.a2_slope * power_episode / self.nominal_voltage_c + self.a2_intercept
+            self.u2 * power_episode / self.nominal_voltage_c + self.v2_bar
             >= battery_content_episode,
         ]
         return constraints
