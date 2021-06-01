@@ -214,9 +214,12 @@ class BatteryControlEnv(gym.Env):
         self.load.reset()
         self.pv_system.reset()
 
+        load = self.load.get_next_load()
+        pv_gen = self.pv_system.get_next_generation()
+
         self.state = {
-            "load": self.load.get_next_load(),
-            "pv_gen": self.pv_system.get_next_generation(),
+            "load": np.array([load], dtype=np.float32),
+            "pv_gen": np.array([pv_gen], dtype=np.float32),
             "battery_cont": np.array([0.0], dtype=np.float32),
             "time_step": 0,
             "cum_load": np.array([0.0], dtype=np.float32),
