@@ -51,8 +51,8 @@ class LithiumIonBattery(BatteryModel):
         self.eta_d = None
         self.eta_c = None
 
-        self.alpha_d = None
-        self.alpha_c = None
+        self.alpha_bar_d = None
+        self.alpha_bar_c = None
 
         self.set_parameters()
 
@@ -77,10 +77,10 @@ class LithiumIonBattery(BatteryModel):
             self.a2_intercept = self.kWh_per_cell * self.num_cells
             self.eta_d = 1 / 0.9  # taking reciprocal so that we don't divide by eta_d
             self.eta_c = 0.9942
-            self.alpha_d = (
+            self.alpha_bar_d = (
                 self.a2_intercept * 1
             )  # the 1 indicates the maximum discharging C-rate
-            self.alpha_c = (
+            self.alpha_bar_c = (
                 self.a2_intercept * 1
             )  # the 1 indicates the maximum charging C-rate
 
@@ -98,8 +98,8 @@ class LithiumIonBattery(BatteryModel):
                 1 / 0.9716
             )  # taking reciprocal so that we don't divide by eta_d
             self.eta_c = 0.9741
-            self.alpha_d = self.a2_intercept * 2
-            self.alpha_c = self.a2_intercept * 2
+            self.alpha_bar_d = self.a2_intercept * 2
+            self.alpha_bar_c = self.a2_intercept * 2
 
         else:
             print("chemistry is not supported")
@@ -118,6 +118,7 @@ class LithiumIonBattery(BatteryModel):
         Returns:
             float: max amount of power that can be charged.
         """
+        # Implements constraint (4)
         for c in np.linspace(power, 0, num=30):
             upper_lim = self.a2_slope * (c / self.nominal_voltage_c) + self.a2_intercept
             b_temp = self.b + c * self.eta_c * self.time_step_len
@@ -137,6 +138,7 @@ class LithiumIonBattery(BatteryModel):
         Returns:
             float: max power that can be discharged.
         """
+        # Implements constraint (4)
         for d in np.linspace(power, 0, num=30):
             lower_lim = self.a1_slope * (d / self.nominal_voltage_d) + self.a1_intercept
             b_temp = self.b - d * self.eta_d * self.time_step_len
@@ -165,14 +167,15 @@ class LithiumIonBattery(BatteryModel):
 
         # clip power so that it satisfies charging rate constraints
         if power > 0:
-            new_c = min(power, self.alpha_c)
+            new_c = min(power, self.alpha_bar_c)  # Implements constraint (3)
             new_c = self.calc_max_charging(new_c)
             new_d = 0
         elif power < 0:
-            new_d = min(-power, self.alpha_d)
+            new_d = min(-power, self.alpha_bar_d)  # Implements constraint (3)
             new_d = self.calc_max_discharging(new_d)
             new_c = 0
 
+        # Implements contraint (1) and (2)
         self.b = (
             self.b
             + new_c * self.eta_c * self.time_step_len
@@ -221,9 +224,9 @@ class LithiumIonBattery(BatteryModel):
             battery_content_episode[1:]
             == battery_content_episode[:-1]
             + delta_energy,  # constraint in Equation (19)
-            # constraint in Equation (21)
-            self.num_cells * self.alpha_d * self.nominal_voltage_d <= power_episode,
-            self.num_cells * self.alpha_c * self.nominal_voltage_c >= power_episode,
+            # constraint in Equation (5)
+            self.alpha_bar_d <= power_episode,
+            self.alpha_bar_c >= power_episode,
             # constraint in Equation (22)
             self.a1_slope * power_episode / self.nominal_voltage_d + self.a1_intercept
             <= battery_content_episode,
