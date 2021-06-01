@@ -187,13 +187,13 @@ class InteractiveEpisodes(widgets.HBox):
                 value=value,
                 min=-1,
                 max=1,
-                step=0.01,
+                step=0.001,
                 description=str(i),
                 disabled=False,
                 continuous_update=False,
                 orientation="vertical",
                 readout=True,
-                readout_format=".2f",
+                readout_format=".3f",
             )
         self.widgets["manual_sliders"] = sliders
         return sliders
@@ -230,7 +230,6 @@ class InteractiveEpisodes(widgets.HBox):
                 actions,
                 rewards,
                 infos,
-                all_obs_keys=agent.env_creator().obs_keys,
             )
 
         # Re-draw the plot in "plot" output widget
