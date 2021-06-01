@@ -67,7 +67,7 @@ class DataPV(PVModel):
 
         self.start = start
 
-        end = start + self.num_steps
+        end = start + self.num_steps + 1
         self.episode_values = self.data[start:end]
 
     def step(self) -> None:
