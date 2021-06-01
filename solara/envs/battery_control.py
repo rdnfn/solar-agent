@@ -209,19 +209,20 @@ class BatteryControlEnv(gym.Env):
         Returns:
             observation (object): the initial observation.
         """
+
+        self.battery.reset()
+        self.load.reset()
+        self.pv_system.reset()
+
         self.state = {
-            "load": np.array([0.0], dtype=np.float32),
-            "pv_gen": np.array([0.0], dtype=np.float32),
+            "load": self.load.get_next_load(),
+            "pv_gen": self.pv_system.get_next_generation(),
             "battery_cont": np.array([0.0], dtype=np.float32),
             "time_step": 0,
             "cum_load": np.array([0.0], dtype=np.float32),
             "cum_pv_gen": np.array([0.0], dtype=np.float32),
         }
         self.time_step = np.array([0])
-
-        self.battery.reset()
-        self.load.reset()
-        self.pv_system.reset()
 
         self.logger.debug("Environment reset.")
 
