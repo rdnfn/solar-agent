@@ -55,6 +55,12 @@ class InteractiveEpisodes(widgets.HBox):
             self.episode_data = episode_data
             num_iterations = len(episode_data)
             top_widget = self._create_play_bar(num_iterations=num_iterations)
+
+            # Hiding top bar if only a single episode in data
+            if len(self.episode_data) == 1:
+                hidden_layout = widgets.Layout(display="none")
+                for child in top_widget.children:
+                    child.layout = hidden_layout
         else:
             self.env = env
             sliders = self._create_manual_sliders()
