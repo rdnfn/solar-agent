@@ -96,6 +96,9 @@ _NOTATION_LIST = [
         "kW",
         "sum of power from solar panels and grid that is used for load or sold",
     ),
+    VarDef(
+        "power_over_thresh", r"P_\text{over}", "kW", "power over peak demand threshold"
+    ),
     # Battery
     VarDef("energy_battery", r"E_\text{batt}", "kWh", "energy content of the battery"),
     VarDef("size", r"B", "kWh", "energy capacity of battery"),
