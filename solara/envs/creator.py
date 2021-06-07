@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+import copy
 import solara.envs.components.solar
 import solara.envs.components.load
 import solara.envs.components.grid
@@ -26,6 +27,9 @@ def create_env(env_config: dict = None) -> gym.Env:
 
     if env_config is None:
         env_config = DEFAULT_ENV_CONFIG
+
+    # Deep copy necessary because of use of .pop() method later
+    env_config = copy.deepcopy(env_config)
 
     # Creating env components (battery, solar, etc.)
     components = {}
