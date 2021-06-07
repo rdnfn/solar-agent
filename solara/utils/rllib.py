@@ -36,7 +36,7 @@ def run_episode(
     rewards = []
     infos = []
 
-    env = agent.env_creator()
+    env = agent.env_creator(agent.config["env_config"])
     obs = env.reset()
     observations.append(obs)
 
@@ -66,7 +66,11 @@ def run_episodes_from_checkpoints(
     """
 
     final_iter_num = max(
-        [int(dirname.split("_")[-1]) for dirname in glob.glob(check_save_path + "/*")]
+        [
+            int(dirname.split("_")[-1])
+            for dirname in glob.glob(check_save_path + "/*")
+            if "checkpoint" in dirname
+        ]
     )
 
     episode_dicts = []
