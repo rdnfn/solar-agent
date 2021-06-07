@@ -21,7 +21,7 @@ class BatteryControlEnv(gym.Env):
     def __init__(
         self,
         battery: BatteryModel,
-        pv_system: PVModel,
+        solar: PVModel,
         grid: GridModel,
         load: LoadModel,
         episode_len: float = 24,
@@ -53,10 +53,10 @@ class BatteryControlEnv(gym.Env):
         """
 
         self.battery = battery
-        self.pv_system = pv_system
+        self.solar = solar
         self.grid = grid
         self.load = load
-        self.components = [battery, pv_system, grid, load]
+        self.components = [battery, solar, grid, load]
 
         self.episode_len = episode_len
         self.time_step_len = time_step_len
@@ -166,7 +166,7 @@ class BatteryControlEnv(gym.Env):
 
         # Get load and PV generation for next time step
         load = self.load.get_next_load()
-        pv_generation = self.pv_system.get_next_generation()
+        pv_generation = self.solar.get_next_generation()
 
         sum_load += load
         sum_pv_gen += pv_generation
@@ -212,10 +212,10 @@ class BatteryControlEnv(gym.Env):
 
         self.battery.reset()
         self.load.reset()
-        self.pv_system.reset()
+        self.solar.reset()
 
         load = self.load.get_next_load()
-        pv_gen = self.pv_system.get_next_generation()
+        pv_gen = self.solar.get_next_generation()
 
         self.state = {
             "load": np.array([load], dtype=np.float32),
