@@ -14,7 +14,7 @@ class VarDef:
     description: str = ""
 
     @property
-    def latex_cmd(self):
+    def latex_cmd(self) -> str:
         return "\\" + self.var_name.replace("_", "")
 
 
