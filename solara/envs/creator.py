@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-import solara.envs.components
-import solara.envs
-from solara.constants import DEFAULT_ENV_CONFIG
+import solara.envs.components.solar
+import solara.envs.components.load
+import solara.envs.components.grid
+import solara.envs.components.battery
+import solara.envs.battery_control
+from solara.envs.configs import DEFAULT_ENV_CONFIG
 
 if TYPE_CHECKING:
     import gym
