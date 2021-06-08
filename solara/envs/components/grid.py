@@ -92,3 +92,6 @@ class PeakGrid(GridModel):
             ) * self.time_step_len
         else:
             return power * self.base_price * self.time_step_len
+
+    def get_info(self):
+        return {"price_threshold": self.peak_threshold}

@@ -5,11 +5,14 @@ from typing import Tuple, Dict, List
 import numpy as np
 import matplotlib.pyplot as plt
 
+from solara.plot.constants import COLORS, LABELS, MARKERS
+
 
 def plot_episode(
     data: Dict[str, np.array],
     colors: Dict[str, str] = None,
     labels: Dict[str, str] = None,
+    markers: Dict[str, str] = None,
     selected_keys: List[str] = None,
     num_timesteps: int = 25,
     iteration: int = None,
@@ -17,30 +20,20 @@ def plot_episode(
     y_max: float = 4,
     y_min: float = -2.5,
     show_grid: bool = True,
-    figsize: Tuple = (6, 6),
+    figsize: Tuple = (6, 4),
     rewards_key: str = "rewards",
     dpi: int = 100,
 ):
     """Plot a single episode of battery control problem."""
 
     if colors is None:
-        colors = {
-            "load": "blue",
-            "pv_gen": "green",
-            "energy_cont": "black",
-            "actions": "red",
-            "rewards": "purple",
-        }
+        colors = COLORS
 
     if labels is None:
-        labels = {
-            "load": "Load (kW)",
-            "pv_gen": "PV generation (kW)",
-            "energy_cont": "Energy cont. (kWh)",
-            "actions": "Actions",
-            "rewards": "Rewards ($)",
-            "net_load": "Net load (kW)",
-        }
+        labels = LABELS
+
+    if markers is None:
+        markers = MARKERS
 
     x = np.arange(0, num_timesteps)
 
@@ -74,7 +67,12 @@ def plot_episode(
             else:
                 label = name
 
-            ax.plot(values, label=label, marker=".", color=color)
+            if name in markers.keys():
+                marker = markers[name]
+            else:
+                marker = "."
+
+            ax.plot(values, label=label, marker=marker, color=color)
 
     if title is not None:
         if iteration is not None:
@@ -88,7 +86,7 @@ def plot_episode(
 
         plt.title(title)
     plt.ylabel("kW / kWh / other")
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1, 1), loc="upper left")
 
     plt.ylim(ymin=y_min, ymax=y_max)
 

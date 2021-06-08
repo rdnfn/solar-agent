@@ -10,6 +10,7 @@ import glob
 
 if TYPE_CHECKING:
     import ray.rllib.agents.trainer
+    import gym
 
 
 def run_episode(
@@ -35,7 +36,7 @@ def run_episode(
     rewards = []
     infos = []
 
-    env = agent.env_creator()
+    env = agent.env_creator(agent.config["env_config"])
     obs = env.reset()
     observations.append(obs)
 
@@ -65,7 +66,11 @@ def run_episodes_from_checkpoints(
     """
 
     final_iter_num = max(
-        [int(dirname.split("_")[-1]) for dirname in glob.glob(check_save_path + "/*")]
+        [
+            int(dirname.split("_")[-1])
+            for dirname in glob.glob(check_save_path + "/*")
+            if "checkpoint" in dirname
+        ]
     )
 
     episode_dicts = []
@@ -80,65 +85,40 @@ def run_episodes_from_checkpoints(
             actions,
             rewards,
             infos,
-            all_obs_keys=agent.env_creator().obs_keys,
         )
         episode_dicts.append(episode_dict)
 
     return episode_dicts
 
 
-def create_obs_dict(
-    observations: List[np.array], obs_keys: List[str]
-) -> Dict[str, np.array]:
-    """Create a dictionary from observations returned during steps in Gym environment.
+def concat_dict_data(dicts: List[Dict]) -> Dict[str, np.array]:
+    """Concatenate list of dicts into dict of np.arrays.
+
+    Each dictionary in list must have the same keys. For example, input
+    `[{'a':1},{'a':2}]` is returned as `{'a': np.array([1,2])}`.
 
     Args:
-        observations (List[np.array]): list of observations collected during episode
-        obs_keys (List[str]): list of keys corresponding to each element in an
-            observation after a single step in an environment. This may be
-            obtainable via the `obs_keys` attribute of the env of the agent.
+        dicts (List[Dict]): list of dicts to be combined
 
     Returns:
-        Dict[str, np.array]: observations as a dictionary, with each key having the
-            trajectory for a single observation type, e.g. battery content.
+        Dict[str, np.array]: dictionary with np.array values
     """
-    observations = np.array(observations)
-    obs_dict = {}
-    for i, key in enumerate(obs_keys):
-        obs_dict[key] = observations[:, i]
+    concat_dict = {}
+    for key in dicts[0].keys():
+        concat_dict[key] = np.empty(len(dicts))
 
-    return obs_dict
+    for i, dictionary in enumerate(dicts):
+        for key, value in dictionary.items():
+            concat_dict[key][i] = value
 
-
-def get_info(key: str, infos: List[Dict]) -> List:
-    """Get a trajectory for a single key in a list of infos.
-
-    This function combines the values stored in a list of info dictionaries returned
-    whilst stepping through a Gym environment, and returns a trajectory for a single
-    key in the info dictionaries as a list.
-
-    Args:
-        key (str): key in info dictionary.
-        infos (List[Dict]): list of info dictionaries collected during episode.
-
-    Returns:
-        List: value trajectory over episode.
-    """
-    data = []
-    for info in infos:
-        data.append(info[key])
-
-    return np.array(data)
+    return concat_dict
 
 
 def get_episode_dict(
-    observations: np.array,
+    observations: List[Dict],
     actions: List,
     rewards: List,
     infos,
-    all_obs_keys: List[str],
-    obs_keys: List[str] = None,
-    info_keys: List[str] = None,
 ) -> Dict:
     """Get dictionary form of episode data.
 
@@ -146,31 +126,57 @@ def get_episode_dict(
     for other functions.
 
     Args:
-        observations (np.array): list of observations
+        observations (List): list of observations (of type gym.spaces.Dict)
         actions (List): list of actions
         rewards (List): list of rewards
         infos ([type]): list of infos
-        all_obs_keys (List[str]): keys of values in observations
-        obs_keys (List[str], optional): observations keys to be included in returned
-            dict. Defaults to None.
-        info_keys (List[str], optional): info keys to be included in returned dict.
-            Defaults to None.
 
     Returns:
         Dict: dictionary used for plotting.
     """
-    if obs_keys is None:
-        obs_keys = all_obs_keys
-    if info_keys is None:
-        info_keys = infos[0].keys()
 
-    obs_dict = create_obs_dict(observations, all_obs_keys)
-    episode_dict = dict((key, obs_dict[key]) for key in obs_keys if key in obs_dict)
+    obs_dict = concat_dict_data(observations)
+    info_dict = concat_dict_data(infos)
 
-    for key in info_keys:
-        episode_dict[key] = get_info(key=key, infos=infos)
+    episode_dict = {**obs_dict, **info_dict}
 
     episode_dict["rewards"] = rewards
     episode_dict["actions"] = actions
 
     return episode_dict
+
+
+class DeterministicAgent:
+    """Deterministic Agent."""
+
+    def __init__(self, actions: List, env: gym.Env) -> None:
+        """Deterministic Agent.
+
+        Args:
+            actions (List): list of actions the agent takes
+            env (gym.Env): environment of the agent
+        """
+        self.actions = actions
+        self.env = env
+        self.step = 0
+
+    def compute_action(
+        self, obs: object, explore: bool = False
+    ):  # pylint: disable=unused-argument
+        """Get action.
+
+        Args:
+            obs (object): observations
+            explore (bool, optional): Whether to explore, has no effect.
+                Defaults to False.
+
+        Returns:
+            np.array: action taken by agent
+        """
+
+        action = self.actions[self.step]
+        self.step += 1
+        return action
+
+    def env_creator(self) -> gym.Env:
+        return self.env
