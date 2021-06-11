@@ -9,7 +9,12 @@ import numpy as np
 class PowerFlow:
     """Power flow."""
 
-    def __init__(self, components: list(int), fully_connected=False) -> None:
+    def __init__(
+        self,
+        components: list(int),
+        fully_connected: bool = False,
+        auto_update_values: bool = False,
+    ) -> None:
         """Power flow.
 
         A data structure to describe connections and power flow in an electric system.
@@ -18,6 +23,8 @@ class PowerFlow:
             components (list): a list of components in the electric system
             fully_connected (bool, optional): whether all components should be
                 connected. Defaults to False.
+            auto_update_values (bool, optional): whether the internal array values
+                should always be updated. Defaults to False.
         """
         if len(components) > len(set(components)):
             raise ValueError(
@@ -28,6 +35,7 @@ class PowerFlow:
             )
 
         self.components = components
+        self.auto_update_values = auto_update_values
 
         self.component_abbr = {
             component: str(component)[0:1] for component in components
@@ -51,7 +59,10 @@ class PowerFlow:
             float: power
         """
         source_idx, target_idx = self._get_idxs_from_components(components)
-        return self.values[source_idx, target_idx]
+        if source_idx == target_idx:
+            return self._get_component_power(source_idx)
+        else:
+            return self.values[source_idx, target_idx]
 
     def __setitem__(self, components: Union[tuple(str), str], value):
         """Set power flow of component, or between two components.
@@ -60,6 +71,8 @@ class PowerFlow:
             components (Union[tuple): selected component(s)
             value ([type]): power value to set to
         """
+        if not isinstance(components, tuple):
+            raise ValueError("Can't set power flow for a single component.")
 
         source_idx, target_idx = self._get_idxs_from_components(components)
 
@@ -72,8 +85,23 @@ class PowerFlow:
             )
 
         self.values[source_idx, target_idx] = value
-        if source_idx != target_idx:
-            self.values[target_idx, source_idx] = -value
+        self.values[target_idx, source_idx] = -value
+
+        if self.auto_update_values:
+            self.values[target_idx, target_idx] = self._get_component_power(target_idx)
+            self.values[source_idx, source_idx] = self._get_component_power(source_idx)
+
+    def _get_component_power(self, component_idx: int) -> float:
+        """Get the power of a component by summing all out- and ingoing power.
+
+        Args:
+            component_idx (int): index of component
+
+        Returns:
+            float: power
+        """
+        component_row = self.values[component_idx]
+        return np.sum(component_row[np.arange(len(component_row)) != component_idx])
 
     def _get_idxs_from_components(
         self, components: Union[tuple(str), str]
