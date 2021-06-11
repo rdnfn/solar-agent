@@ -1,6 +1,6 @@
 """Module defining project notation."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, InitVar
 from typing import List
 
 
@@ -12,10 +12,14 @@ class VarDef:
     latex_math: str = " "
     unit: str = ""
     description: str = ""
+    latex_cmd: InitVar[str] = None
 
-    @property
-    def latex_cmd(self) -> str:
-        return "\\" + self.var_name.replace("_", "")
+    def __post_init__(self, latex_cmd):
+        """Complete init."""
+        if latex_cmd is not None:
+            self.latex_cmd = latex_cmd
+        else:
+            self.latex_cmd = "\\" + self.var_name.replace("_", "")
 
 
 @dataclass
