@@ -125,14 +125,11 @@ class PowerFlow:
     def get_connections(self) -> list(tuple(str, str)):
         """Get all (non-self-referenced) connections in electric system.
 
-        Args:
-            self ([type]): [description]
-
         Returns:
             list: [description]
         """
         connection_list = []
-        connections_idxs = np.argwhere(self.connections is True)
+        connections_idxs = np.argwhere(self.connections)
 
         for source_idx, target_idx in connections_idxs:
             if source_idx != target_idx:
