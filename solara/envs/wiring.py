@@ -14,6 +14,7 @@ class PowerFlow:
         components: list(int),
         fully_connected: bool = False,
         auto_update_values: bool = False,
+        single_direction: bool = True,
     ) -> None:
         """Power flow.
 
@@ -25,6 +26,8 @@ class PowerFlow:
                 connected. Defaults to False.
             auto_update_values (bool, optional): whether the internal array values
                 should always be updated. Defaults to False.
+            single_direction (bool, optional): whether to check that components can
+                only either receive or give power, but not both. Defaults to True.
         """
         if len(components) > len(set(components)):
             raise ValueError(
@@ -36,6 +39,7 @@ class PowerFlow:
 
         self.components = components
         self.auto_update_values = auto_update_values
+        self.single_direction = single_direction
 
         self.component_abbr = {
             component: str(component)[0:1] for component in components
@@ -83,6 +87,11 @@ class PowerFlow:
                     "components, thus no power flow possible."
                 )
             )
+        if self.single_direction:
+            if self._get_component_power(target_idx) > 0:
+                raise ValueError("Target component is both receiving and giving power.")
+            elif self._get_component_power(source_idx) < 0:
+                raise ValueError("Source component is both receiving and giving power.")
 
         self.values[source_idx, target_idx] = value
         self.values[target_idx, source_idx] = -value
