@@ -1,7 +1,12 @@
 """Module defining project notation."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, InitVar
-from typing import List
+from typing import TYPE_CHECKING, List
+
+if TYPE_CHECKING:
+    import solara.envs.wiring
 
 
 @dataclass
@@ -88,6 +93,69 @@ class NotationCollection:
             out += "\n"
 
         return out
+
+
+def create_power_variables(power_flow: solara.envs.wiring.PowerFlow) -> list:
+    """Create a list of notation variable definitions from an electric system."""
+    var_defs = []
+    for component in power_flow.components:
+
+        # overall power
+        var_name = "power_flow['{}']".format(component)
+        latex_math = "P_{}".format(power_flow.component_abbr[component])
+        unit: str = "kW"
+        description: str = "power input(negative)/ output(positive) of {}".format(
+            component
+        )
+        latex_cmd = "\\powerflow{}".format(component)
+
+        var_defs.append(
+            VarDef(var_name, latex_math, unit, description, latex_cmd=latex_cmd)
+        )
+
+        # input
+        var_name = "-min(power_flow['{}'], 0)".format(component)
+        latex_math = "P_{{\\rightarrow {}}}".format(
+            power_flow.component_abbr[component]
+        )
+        unit: str = "kW"
+        description: str = "power input to {}".format(component)
+        latex_cmd = "\\powerin{}".format(component)
+
+        var_defs.append(
+            VarDef(var_name, latex_math, unit, description, latex_cmd=latex_cmd)
+        )
+
+        # output
+        var_name = "max(power_flow['{}'], 0)".format(component)
+        latex_math = "P_{{{}\\rightarrow }}".format(
+            power_flow.component_abbr[component]
+        )
+        unit: str = "kW"
+        description: str = "power output from {}".format(component)
+        latex_cmd = "\\powerout{}".format(component)
+
+        var_defs.append(
+            VarDef(var_name, latex_math, unit, description, latex_cmd=latex_cmd)
+        )
+
+    for connection in power_flow.get_connections():
+        source_cmp, target_cmp = connection
+        var_name = "power_flow['{}','{}']".format(source_cmp, target_cmp)
+        latex_math = "P_{{{}{}}}".format(
+            power_flow.component_abbr[source_cmp], power_flow.component_abbr[target_cmp]
+        )
+        unit: str = "kW"
+        description: str = "power transferred from {} to {}".format(
+            source_cmp, target_cmp
+        )
+        latex_cmd = "\\power{}to{}".format(source_cmp, target_cmp)
+
+        var_defs.append(
+            VarDef(var_name, latex_math, unit, description, latex_cmd=latex_cmd)
+        )
+
+    return var_defs
 
 
 _NOTATION_LIST = [
