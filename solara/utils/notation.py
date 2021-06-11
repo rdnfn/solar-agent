@@ -34,7 +34,11 @@ class NotationCollection:
     def print_notation_style(self) -> None:
         """Print notation as latex style file commands."""
         for variable in self.notation_list:
-            print("\\def{}{{{}}}".format(variable.latex_cmd, variable.latex_math))
+            print(
+                "\\newcommand{{{}}}{{{}}}".format(
+                    variable.latex_cmd, variable.latex_math
+                )
+            )
 
     def get_latex_table_str(self) -> str:
         """Get notation table formatted in latex.
