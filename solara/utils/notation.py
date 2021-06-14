@@ -252,6 +252,15 @@ _NOTATION_LIST = [
         cp_area="battery",
     ),
     VarDef(
+        "is_battery_charging",
+        r"I",
+        "",
+        "Boolean indicator variable whether battery is charging",
+        time_arg=True,
+        cp_type="variable",
+        cp_area="battery",
+    ),
+    VarDef(
         "size",
         r"B",
         "kWh",
