@@ -18,6 +18,7 @@ class VarDef:
     unit: str = ""
     description: str = ""
     latex_cmd: InitVar[str] = None
+    time_arg: bool = False
 
     def __post_init__(self, latex_cmd):
         """Complete init."""
@@ -39,11 +40,18 @@ class NotationCollection:
     def print_notation_style(self) -> None:
         """Print notation as latex style file commands."""
         for variable in self.notation_list:
-            print(
-                "\\newcommand{{{}}}{{{}}}".format(
-                    variable.latex_cmd, variable.latex_math
+            if variable.time_arg:
+                print(
+                    "\\newcommand{{{}}}[1][(t)]{{{}#1}}".format(
+                        variable.latex_cmd, variable.latex_math
+                    )
                 )
-            )
+            else:
+                print(
+                    "\\newcommand{{{}}}{{{}}}".format(
+                        variable.latex_cmd, variable.latex_math
+                    )
+                )
 
     def get_latex_table_str(self) -> str:
         """Get notation table formatted in latex.
@@ -110,7 +118,14 @@ def create_power_variables(power_flow: solara.envs.wiring.PowerFlow) -> list:
         latex_cmd = "\\powerflow{}".format(component)
 
         var_defs.append(
-            VarDef(var_name, latex_math, unit, description, latex_cmd=latex_cmd)
+            VarDef(
+                var_name,
+                latex_math,
+                unit,
+                description,
+                latex_cmd=latex_cmd,
+                time_arg=True,
+            )
         )
 
         # input
@@ -123,7 +138,14 @@ def create_power_variables(power_flow: solara.envs.wiring.PowerFlow) -> list:
         latex_cmd = "\\powerin{}".format(component)
 
         var_defs.append(
-            VarDef(var_name, latex_math, unit, description, latex_cmd=latex_cmd)
+            VarDef(
+                var_name,
+                latex_math,
+                unit,
+                description,
+                latex_cmd=latex_cmd,
+                time_arg=True,
+            )
         )
 
         # output
@@ -136,7 +158,14 @@ def create_power_variables(power_flow: solara.envs.wiring.PowerFlow) -> list:
         latex_cmd = "\\powerout{}".format(component)
 
         var_defs.append(
-            VarDef(var_name, latex_math, unit, description, latex_cmd=latex_cmd)
+            VarDef(
+                var_name,
+                latex_math,
+                unit,
+                description,
+                latex_cmd=latex_cmd,
+                time_arg=True,
+            )
         )
 
     for connection in power_flow.get_connections():
@@ -152,7 +181,14 @@ def create_power_variables(power_flow: solara.envs.wiring.PowerFlow) -> list:
         latex_cmd = "\\power{}to{}".format(source_cmp, target_cmp)
 
         var_defs.append(
-            VarDef(var_name, latex_math, unit, description, latex_cmd=latex_cmd)
+            VarDef(
+                var_name,
+                latex_math,
+                unit,
+                description,
+                latex_cmd=latex_cmd,
+                time_arg=True,
+            )
         )
 
     return var_defs
@@ -236,7 +272,7 @@ _NOTATION_LIST = [
     ),
     # General parameters
     VarDef("num_timesteps", r"T", "steps", "number of time steps in an episode"),
-    VarDef("len_timestep", r"\delta_\text{step}", "hours", "length of a timestep"),
+    VarDef("len_timestep", r"\Delta_t", "hours", "length of a timestep"),
 ]
 
 NOTATION = NotationCollection(_NOTATION_LIST)
