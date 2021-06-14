@@ -55,25 +55,62 @@ class NotationCollection:
                     )
                 )
 
-    def get_latex_table_str(self) -> str:
+    def _get_table_var_info(
+        self, variable: VarDef, mrkdwn: bool = False
+    ) -> tuple(str, str, str, str):
+        """Create column entries for table row.
+
+        Args:
+            variable (VarDef): variable described in row
+            mrkdwn (bool): whether the table row is in markdown. Defaults to False.
+
+        Returns:
+            [type]: [description]
+        """
+
+        if variable.time_arg:
+            latex_math = variable.latex_math + "(t)"
+        else:
+            latex_math = variable.latex_math
+
+        if mrkdwn:
+            var_name = variable.var_name
+        else:
+            var_name = variable.var_name.replace("_", r"\_")
+
+        return (
+            latex_math,
+            variable.description,
+            variable.unit,
+            var_name,
+        )
+
+    def get_latex_table_str(self, print_python_var_name=False) -> str:
         """Get notation table formatted in latex.
 
         Returns:
             str: latex string
         """
+        num_cols = 3 + int(print_python_var_name)
 
         out = ""
         out += r"\begin{center}" + "\n"
-        out += r"\begin{tabular}{ l p{6cm} l l}" + "\n"
-        out += "Variable & Description & Unit & Python Name \\\\ \n"
+        out += r"\begin{tabular}{ l | p{8cm}" + "| l" * (num_cols - 2) + r"}" + "\n"
+        out += "Name & Description & Unit "
+        if print_python_var_name:
+            out += "& Python Name"
+        out += " \\\\ \n"
         out += "\\hline"
 
+        row_str = "${}$ & {} & {}"
+        if print_python_var_name:
+            row_str += " & \\texttt{{{}}}"
+        row_str += " \\\\"
+
         for variable in self.notation_list:
-            out += "${}$ & {} & {} & \\texttt{{{}}} \\\\".format(
-                variable.latex_math,
-                variable.description,
-                variable.unit,
-                variable.var_name.replace("_", r"\_"),
+
+            out += row_str.format(
+                *self._get_table_var_info(variable),
             )
             out += "\n"
 
@@ -95,10 +132,7 @@ class NotationCollection:
 
         for variable in self.notation_list:
             out += "${}$ | {} | {} | `{}`".format(
-                variable.latex_math,
-                variable.description,
-                variable.unit,
-                variable.var_name,
+                *self._get_table_var_info(variable, mrkdwn=True)
             )
             out += "\n"
 
@@ -107,6 +141,8 @@ class NotationCollection:
 
 def create_power_variables(power_flow: solara.envs.wiring.PowerFlow) -> list:
     """Create a list of notation variable definitions from an electric system."""
+    connections = power_flow.get_connections()
+
     var_defs = []
     for component in power_flow.components:
 
@@ -132,50 +168,52 @@ def create_power_variables(power_flow: solara.envs.wiring.PowerFlow) -> list:
         )
 
         # input
-        var_name = "-min(power_flow['{}'], 0)".format(component)
-        latex_math = "P_{{\\rightarrow {}}}".format(
-            power_flow.component_abbr[component]
-        )
-        unit: str = "kW"
-        description: str = "power input to {}".format(component)
-        latex_cmd = "\\powerin{}".format(component)
-
-        var_defs.append(
-            VarDef(
-                var_name,
-                latex_math,
-                unit,
-                description,
-                latex_cmd=latex_cmd,
-                time_arg=True,
-                cp_type="variable",
-                cp_area="power",
+        if connections and component in [conn[1] for conn in connections]:
+            var_name = "-min(power_flow['{}'], 0)".format(component)
+            latex_math = "P_{{\\rightarrow {}}}".format(
+                power_flow.component_abbr[component]
             )
-        )
+            unit: str = "kW"
+            description: str = "power input to {}".format(component)
+            latex_cmd = "\\powerin{}".format(component)
+
+            var_defs.append(
+                VarDef(
+                    var_name,
+                    latex_math,
+                    unit,
+                    description,
+                    latex_cmd=latex_cmd,
+                    time_arg=True,
+                    cp_type="variable",
+                    cp_area="power",
+                )
+            )
 
         # output
-        var_name = "max(power_flow['{}'], 0)".format(component)
-        latex_math = "P_{{{}\\rightarrow }}".format(
-            power_flow.component_abbr[component]
-        )
-        unit: str = "kW"
-        description: str = "power output from {}".format(component)
-        latex_cmd = "\\powerout{}".format(component)
-
-        var_defs.append(
-            VarDef(
-                var_name,
-                latex_math,
-                unit,
-                description,
-                latex_cmd=latex_cmd,
-                time_arg=True,
-                cp_type="variable",
-                cp_area="power",
+        if connections and component in [conn[0] for conn in connections]:
+            var_name = "max(power_flow['{}'], 0)".format(component)
+            latex_math = "P_{{{}\\rightarrow }}".format(
+                power_flow.component_abbr[component]
             )
-        )
+            unit: str = "kW"
+            description: str = "power output from {}".format(component)
+            latex_cmd = "\\powerout{}".format(component)
 
-    for connection in power_flow.get_connections():
+            var_defs.append(
+                VarDef(
+                    var_name,
+                    latex_math,
+                    unit,
+                    description,
+                    latex_cmd=latex_cmd,
+                    time_arg=True,
+                    cp_type="variable",
+                    cp_area="power",
+                )
+            )
+
+    for connection in connections:
         source_cmp, target_cmp = connection
         var_name = "power_flow['{}','{}']".format(source_cmp, target_cmp)
         latex_math = "P_{{{}{}}}".format(
@@ -234,6 +272,14 @@ _NOTATION_LIST = [
         r"n_\text{cell}",
         "cells",
         "number of cells in battery",
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    VarDef(
+        "initial_energy_content",
+        r"E_b (0)",
+        "kWh",
+        "initial energy content of battery at time step 0",
         cp_type="parameter",
         cp_area="battery",
     ),
