@@ -18,7 +18,9 @@ class VarDef:
     unit: str = ""
     description: str = ""
     latex_cmd: InitVar[str] = None
-    time_arg: bool = False
+    time_arg: bool = False  # whether the variable has time argument, e.g. P(t).
+    cp_type: str = None  # convex problem var type: "variable" or "parameter"
+    cp_area: str = "general"  # which problem part: e.g. "battery", "grid", etc.
 
     def __post_init__(self, latex_cmd):
         """Complete init."""
@@ -125,6 +127,7 @@ def create_power_variables(power_flow: solara.envs.wiring.PowerFlow) -> list:
                 description,
                 latex_cmd=latex_cmd,
                 time_arg=True,
+                cp_type="variable",
             )
         )
 
@@ -145,6 +148,8 @@ def create_power_variables(power_flow: solara.envs.wiring.PowerFlow) -> list:
                 description,
                 latex_cmd=latex_cmd,
                 time_arg=True,
+                cp_type="variable",
+                cp_area="power",
             )
         )
 
@@ -165,6 +170,8 @@ def create_power_variables(power_flow: solara.envs.wiring.PowerFlow) -> list:
                 description,
                 latex_cmd=latex_cmd,
                 time_arg=True,
+                cp_type="variable",
+                cp_area="power",
             )
         )
 
@@ -188,6 +195,7 @@ def create_power_variables(power_flow: solara.envs.wiring.PowerFlow) -> list:
                 description,
                 latex_cmd=latex_cmd,
                 time_arg=True,
+                cp_type="variable",
             )
         )
 
@@ -195,6 +203,126 @@ def create_power_variables(power_flow: solara.envs.wiring.PowerFlow) -> list:
 
 
 _NOTATION_LIST = [
+    # Battery
+    VarDef(
+        "energy_battery",
+        r"E_\text{b}",
+        "kWh",
+        "energy content of the battery",
+        time_arg=True,
+        cp_type="variable",
+        cp_area="battery",
+    ),
+    VarDef(
+        "size",
+        r"B",
+        "kWh",
+        "energy capacity of battery",
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    VarDef(
+        "kWh_per_cell",
+        r"B_\text{cell}",
+        "kWh",
+        "energy capacity per individual cell",
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    VarDef(
+        "num_cells",
+        r"n_\text{cell}",
+        "cells",
+        "number of cells in battery",
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    VarDef(
+        "nominal_voltage_c",
+        r"V_{\text{nom},c}",
+        "V",
+        "nominal voltage of battery when charging",
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    VarDef(
+        "nominal_voltage_d",
+        r"V_{\text{nom},d}",
+        "V",
+        "nominal voltage of battery when discharging",
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    VarDef(
+        "eff_discharge",
+        r"\eta_d",
+        "kWh",
+        (
+            "efficiency of discharging the battery, amount of energy"
+            " content reduction for discharging 1 kWh"
+        ),
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    VarDef(
+        "eff_charge",
+        r"\eta_c",
+        "kWh",
+        (
+            "efficiency of charging the battery, amount of"
+            " energy content increase for charging 1 kWh"
+        ),
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    # Grid
+    VarDef(
+        "price_base",
+        r"\pi_b",
+        r"\$/kWh",
+        "base price paid for energy drawn from the grid",
+        cp_type="parameter",
+        cp_area="grid",
+    ),
+    VarDef(
+        "price_penalty",
+        r"\pi_d",
+        r"\$/kWh",
+        (
+            "additional price penalty paid for energy drawn"
+            " from the grid when demand is above threshold"
+        ),
+        cp_type="parameter",
+        cp_area="grid",
+    ),
+    VarDef(
+        "grid_threshold",
+        r"\Gamma",
+        "kW",
+        "demand threshold above which price penalty is paid",
+        cp_type="parameter",
+        cp_area="grid",
+    ),
+    # General parameters
+    VarDef(
+        "num_timesteps",
+        r"T",
+        "steps",
+        "number of time steps in an episode",
+        cp_type="parameter",
+        cp_area="general",
+    ),
+    VarDef(
+        "len_timestep",
+        r"\Delta_t",
+        "hours",
+        "length of a timestep",
+        cp_type="parameter",
+        cp_area="general",
+    ),
+]
+
+_OLD_POWER_NOTATION = [
     # Power variables
     VarDef("power_charge", r"P_\text{c}", "kW", "power used to charge the battery"),
     VarDef("power_discharge", r"P_\text{d}", "kW", "power discharged from the battery"),
@@ -211,68 +339,6 @@ _NOTATION_LIST = [
     VarDef(
         "power_over_thresh", r"P_\text{over}", "kW", "power over peak demand threshold"
     ),
-    # Battery
-    VarDef("energy_battery", r"E_\text{batt}", "kWh", "energy content of the battery"),
-    VarDef("size", r"B", "kWh", "energy capacity of battery"),
-    VarDef(
-        "kWh_per_cell", r"B_\text{cell}", "kWh", "energy capacity per individual cell"
-    ),
-    VarDef("num_cells", r"n_\text{cell}", "cells", "number of cells in battery"),
-    VarDef(
-        "nominal_voltage_c",
-        r"V_{\text{nom},c}",
-        "V",
-        "nominal voltage of battery when charging",
-    ),
-    VarDef(
-        "nominal_voltage_d",
-        r"V_{\text{nom},d}",
-        "V",
-        "nominal voltage of battery when discharging",
-    ),
-    # Grid
-    VarDef(
-        "price_base",
-        r"\pi_b",
-        r"\$/kWh",
-        "base price paid for energy drawn from the grid",
-    ),
-    VarDef(
-        "price_penalty",
-        r"\pi_d",
-        r"\$/kWh",
-        (
-            "additional price penalty paid for energy drawn"
-            " from the grid when demand is above threshold"
-        ),
-    ),
-    VarDef(
-        "grid_threshold",
-        r"\Gamma",
-        "kW",
-        "demand threshold above which price penalty is paid",
-    ),
-    VarDef(
-        "eff_discharge",
-        r"\eta_d",
-        "kWh",
-        (
-            "efficiency of discharging the battery, amount of energy"
-            " content reduction for discharging 1 kWh"
-        ),
-    ),
-    VarDef(
-        "eff_charge",
-        r"\eta_c",
-        "kWh",
-        (
-            "efficiency of charging the battery, amount of"
-            " energy content increase for charging 1 kWh"
-        ),
-    ),
-    # General parameters
-    VarDef("num_timesteps", r"T", "steps", "number of time steps in an episode"),
-    VarDef("len_timestep", r"\Delta_t", "hours", "length of a timestep"),
 ]
 
 NOTATION = NotationCollection(_NOTATION_LIST)
