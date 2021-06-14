@@ -49,7 +49,7 @@ class PowerFlow:
         self.values = np.zeros((num_comps, num_comps), dtype=np.float32)
 
         if not fully_connected:
-            self.connections = np.identity((num_comps, num_comps), dtype=bool)
+            self.connections = np.identity(num_comps, dtype=bool)
         else:
             self.connections = np.ones((num_comps, num_comps), dtype=bool)
 
