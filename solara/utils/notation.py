@@ -261,6 +261,15 @@ _NOTATION_LIST = [
         cp_area="battery",
     ),
     VarDef(
+        "power_out_grid_above_thresh",
+        r"\bar{P}_{g\rightarrow}",
+        "kW",
+        "Amount of power output of grid above threshold",
+        time_arg=True,
+        cp_type="variable",
+        cp_area="grid",
+    ),
+    VarDef(
         "size",
         r"B",
         "kWh",
