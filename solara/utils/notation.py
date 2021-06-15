@@ -371,7 +371,7 @@ _NOTATION_LIST = [
         "len_timestep",
         r"\Delta_t",
         "hours",
-        "length of a timestep",
+        "length of a time step",
         cp_type="parameter",
         cp_area="general",
     ),
