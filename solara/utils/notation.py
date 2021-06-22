@@ -68,18 +68,18 @@ class NotationCollection:
             [type]: [description]
         """
 
-        if variable.time_arg:
-            latex_math = variable.latex_math + "(t)"
-        else:
-            latex_math = variable.latex_math
-
         if mrkdwn:
             var_name = variable.var_name
+            if variable.time_arg:
+                latex = variable.latex_math + "(t)"
+            else:
+                latex = variable.latex_math
         else:
             var_name = variable.var_name.replace("_", r"\_")
+            latex = variable.latex_cmd
 
         return (
-            latex_math,
+            latex,
             variable.description,
             variable.unit,
             var_name,
@@ -139,7 +139,9 @@ class NotationCollection:
         return out
 
 
-def create_power_variables(power_flow: solara.envs.wiring.PowerFlow) -> list:
+def create_power_variables(
+    power_flow: solara.envs.wiring.PowerFlow, include_in_out_vars: bool = True
+) -> list:
     """Create a list of notation variable definitions from an electric system."""
     connections = power_flow.get_connections()
 
@@ -147,25 +149,26 @@ def create_power_variables(power_flow: solara.envs.wiring.PowerFlow) -> list:
     for component in power_flow.components:
 
         # overall power
-        var_name = "power_flow['{}']".format(component)
-        latex_math = "P_{}".format(power_flow.component_abbr[component])
-        unit: str = "kW"
-        description: str = "power input(negative)/ output(positive) of {}".format(
-            component
-        )
-        latex_cmd = "\\powerflow{}".format(component)
-
-        var_defs.append(
-            VarDef(
-                var_name,
-                latex_math,
-                unit,
-                description,
-                latex_cmd=latex_cmd,
-                time_arg=True,
-                cp_type="variable",
+        if include_in_out_vars:
+            var_name = "power_flow['{}']".format(component)
+            latex_math = "P_{}".format(power_flow.component_abbr[component])
+            unit: str = "kW"
+            description: str = "power input(negative)/ output(positive) of {}".format(
+                component
             )
-        )
+            latex_cmd = "\\powerflow{}".format(component)
+
+            var_defs.append(
+                VarDef(
+                    var_name,
+                    latex_math,
+                    unit,
+                    description,
+                    latex_cmd=latex_cmd,
+                    time_arg=True,
+                    cp_type="variable",
+                )
+            )
 
         # input
         if connections and component in [conn[1] for conn in connections]:
