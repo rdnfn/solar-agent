@@ -16,6 +16,7 @@ gym                 # OpenAI gym for environment
 torch               # Pytorch
 ray[rllib]          # RLlib
 ray[default]        # Default ray libraries
+gputil              # Recommended for ray
 
 # Convex optimisation
 cvxpy               # CVXPY
@@ -23,3 +24,4 @@ cvxpy               # CVXPY
 # Interactive computing
 jupyterlab          # Jupyter lab
 matplotlib          # Standard plotting tools
+ipywidgets          # Interactive widgets in jupyter lab
