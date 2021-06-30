@@ -171,6 +171,7 @@ class BatteryControlEnv(gym.Env):
         # Get load and PV generation for next time step
         load = self.load.get_next_load()
         pv_generation = self.solar.get_next_generation()
+        battery_cont = self.battery.get_energy_content()
 
         sum_load += load
         sum_pv_gen += pv_generation
@@ -179,9 +180,7 @@ class BatteryControlEnv(gym.Env):
         observation = {
             "load": np.array([load], dtype=np.float32),
             "pv_gen": np.array([pv_generation], dtype=np.float32),
-            "battery_cont": np.array(
-                [self.battery.get_energy_content()], dtype=np.float32
-            ),
+            "battery_cont": np.array([battery_cont], dtype=np.float32),
             "time_step": int(self.time_step),
             "cum_load": sum_load,
             "cum_pv_gen": sum_pv_gen,
@@ -194,6 +193,7 @@ class BatteryControlEnv(gym.Env):
         info["net_load"] = net_load
         info["charging_power"] = charging_power
         info["cost"] = cost
+        info["battery_cont"] = battery_cont
 
         info = {**info, **self.grid.get_info()}
 
