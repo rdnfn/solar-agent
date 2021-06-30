@@ -127,6 +127,9 @@ class BatteryControlEnv(gym.Env):
             action,
             type(action),
         )
+
+        info = {}
+
         action = float(action)  # getting the float value
         self.logger.debug("step - action: %1.3f", action)
 
@@ -163,6 +166,7 @@ class BatteryControlEnv(gym.Env):
             power_diff = np.abs(charging_power - float(attempted_action))
             reward -= power_diff
             self.logger.debug("step - cost: %6.3f, power_diff: %6.3f", cost, power_diff)
+            info["power_diff"] = power_diff
 
         # Get load and PV generation for next time step
         load = self.load.get_next_load()
@@ -187,12 +191,10 @@ class BatteryControlEnv(gym.Env):
 
         done = self.time_step >= self.episode_len
 
-        info = {
-            "net_load": net_load,
-            "charging_power": charging_power,
-            "cost": cost,
-            "power_diff": power_diff,
-        }
+        info["net_load"] = net_load
+        info["charging_power"] = charging_power
+        info["cost"] = cost
+
         info = {**info, **self.grid.get_info()}
 
         self.logger.debug("step - info %s", info)
