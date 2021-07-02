@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING, Tuple, List, Dict
 
 import numpy as np
 import glob
+import ray.rllib
 
 if TYPE_CHECKING:
-    import ray.rllib.agents.trainer
     import gym
 
 
@@ -180,3 +180,55 @@ class DeterministicAgent:
 
     def env_creator(self) -> gym.Env:
         return self.env
+
+
+class InfoCallback(ray.rllib.agents.callbacks.DefaultCallbacks):
+    """Callback to add additional metrics over the training process from step infos."""
+
+    # pylint: disable=unused-argument
+
+    info_keys = ["cost", "power_diff", "battery_cont"]
+
+    def on_episode_start(
+        self,
+        *,
+        worker: ray.rllib.evaluation.RolloutWorker,
+        base_env: ray.rllib.env.BaseEnv,
+        policies: Dict[str, ray.rllib.policy.Policy],
+        episode: ray.rllib.evaluation.MultiAgentEpisode,
+        env_index: int,
+        **kwargs
+    ):
+        """Executed at start of episode."""
+
+        episode.user_data["infos"] = []
+
+    def on_episode_step(
+        self,
+        *,
+        worker: ray.rllib.evaluation.RolloutWorker,
+        base_env: ray.rllib.env.BaseEnv,
+        episode: ray.rllib.evaluation.MultiAgentEpisode,
+        env_index: int,
+        **kwargs
+    ):
+        """Executed on each episode step."""
+
+        episode.user_data["infos"].append(episode.last_info_for())
+
+    def on_episode_end(
+        self,
+        *,
+        worker: ray.rllib.evaluation.RolloutWorker,
+        base_env: ray.rllib.env.BaseEnv,
+        policies: Dict[str, ray.rllib.policy.Policy],
+        episode: ray.rllib.evaluation.MultiAgentEpisode,
+        env_index: int,
+        **kwargs
+    ):
+        """Executed at end of episode."""
+
+        for key in self.info_keys:
+            if key in episode.user_data["infos"][0].keys():
+                key_data = [info[key] for info in episode.user_data["infos"]]
+                episode.custom_metrics[key] = sum(key_data)
