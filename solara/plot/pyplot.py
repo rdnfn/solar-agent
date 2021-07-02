@@ -4,8 +4,17 @@ from typing import Tuple, Dict, List
 
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from solara.plot.constants import COLORS, LABELS, MARKERS
+
+
+def default_setup() -> None:
+    """Setup default matplotlib settings."""
+
+    plt.figure(figsize=(6, 4), dpi=100, tight_layout=True)
+    sns.set_style("ticks", {"dashes": False})
+    sns.set_context("paper")
 
 
 def plot_episode(
