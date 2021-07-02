@@ -35,6 +35,8 @@ def plot_episode(
 ):
     """Plot a single episode of battery control problem."""
 
+    # default_setup()
+
     if colors is None:
         colors = COLORS
 
@@ -99,4 +101,4 @@ def plot_episode(
 
     plt.ylim(ymin=y_min, ymax=y_max)
 
-    plt.show()
+    # plt.show()
