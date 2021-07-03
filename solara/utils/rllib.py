@@ -3,7 +3,7 @@ from __future__ import annotations
 
 # Above enables using TYPE_CHECKING without using quotes around annotation
 
-from typing import TYPE_CHECKING, Tuple, List, Dict
+from typing import TYPE_CHECKING, Tuple, List, Dict, Union
 
 import numpy as np
 import glob
@@ -53,13 +53,17 @@ def run_episode(
 
 
 def run_episodes_from_checkpoints(
-    agent: ray.rllib.agents.trainer.Trainer, check_save_path: str
+    agent: ray.rllib.agents.trainer.Trainer,
+    check_save_path: str,
+    check_range: Union[int, List[int, int]] = None,
 ) -> List[Dict]:
     """Run episode from agent checkpoints and get corresponding episode trajectories.
 
     Args:
         agent (ray.rllib.agents.trainer.Trainer): agent to load checkpoints for.
         check_save_path (str): path where checkpoints are saved.
+        check_num (int): range, or single number of checkpoint(s) to load and run.
+            Defaults to None which loads all checkpoints.
 
     Returns:
         List[Dict]: list of dictionaries, each with data from one episode.
@@ -75,7 +79,15 @@ def run_episodes_from_checkpoints(
 
     episode_dicts = []
 
-    for i in range(1, final_iter_num + 1):
+    if check_range is None:
+        check_range = [1, final_iter_num + 1]
+    elif isinstance(check_range, int):
+        check_range = [check_range, check_range + 1]
+
+    if check_range[1] > final_iter_num + 1:
+        raise ValueError("check_range out of range of existing checkpoints.")
+
+    for i in range(*check_range):
         agent.restore(
             check_save_path + "/checkpoint_{i:06.0f}/checkpoint-{i}".format(i=i)
         )
