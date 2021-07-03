@@ -4,6 +4,7 @@ from typing import Tuple, Dict, List
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 import seaborn as sns
 
 from solara.plot.constants import COLORS, LABELS, MARKERS
@@ -29,13 +30,15 @@ def plot_episode(
     y_max: float = 4,
     y_min: float = -2.5,
     show_grid: bool = True,
-    figsize: Tuple = (6, 4),
+    figsize: Tuple = (4.62, 3),
     rewards_key: str = "rewards",
     dpi: int = 100,
 ):
     """Plot a single episode of battery control problem."""
 
     # default_setup()
+
+    matplotlib.rc("text", usetex=True)
 
     if colors is None:
         colors = COLORS
@@ -83,6 +86,8 @@ def plot_episode(
             else:
                 marker = "."
 
+            label = label.replace("$", "\\$")
+
             ax.plot(values, label=label, marker=marker, color=color)
 
     if title is not None:
@@ -97,7 +102,49 @@ def plot_episode(
 
         plt.title(title)
     plt.ylabel("kW / kWh / other")
-    plt.legend(bbox_to_anchor=(1, 1), loc="upper left")
+    plt.xlabel("Time step")
+
+    # Adding overall data
+    if "power_diff" in data:
+        power_diff_sum = float(sum(data["power_diff"]))
+    else:
+        power_diff_sum = 0
+
+    ep_summary_stats = (
+        # "\\rule{{67pt}}{{0.25pt}}"
+        "\n \\textbf{{Episode statistics}}"
+        "\n Sum of rewards: {:>8.3f} \\\\"
+        "\n Sum of costs:  {:>15.3f} \\\\"
+        "\n Sum of penalties: {:>11.3f}"
+    ).format(
+        float(sum(data["rewards"])),
+        float(sum(data["cost"])),
+        power_diff_sum,
+    )
+
+    # ax.text(
+    #     1.04,
+    #     0.2,
+    #     ep_summary_stats,
+    #     color="black",
+    #     bbox=dict(
+    #         facecolor="none",
+    #         edgecolor="grey",
+    #         # boxstyle="Square"
+    #     ),
+    #     transform=plt.gca().transAxes,
+    # )
+
+    handles, _ = ax.get_legend_handles_labels()
+    handles.append(matplotlib.patches.Patch(color="none", label=ep_summary_stats))
+
+    plt.legend(
+        bbox_to_anchor=(1.02, 1.025),
+        loc="upper left",
+        edgecolor="grey",
+        handles=handles,
+        # title="\\textbf{{Legend}}",
+    )
 
     plt.ylim(ymin=y_min, ymax=y_max)
 
