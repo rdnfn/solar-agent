@@ -72,7 +72,7 @@ def run_episodes_from_checkpoints(
     final_iter_num = max(
         [
             int(dirname.split("_")[-1])
-            for dirname in glob.glob(check_save_path + "/*")
+            for dirname in glob.glob(glob.escape(check_save_path) + "/*")
             if "checkpoint" in dirname
         ]
     )
