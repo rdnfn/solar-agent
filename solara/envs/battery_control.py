@@ -31,7 +31,6 @@ class BatteryControlEnv(gym.Env):
         obs_keys: List = None,
         logging_level: str = "WARNING",
         log_handler: logging.Handler = None,
-        seed: int = None,
     ) -> None:
         """A gym enviroment for controlling a battery in a PV installation.
 
@@ -53,8 +52,6 @@ class BatteryControlEnv(gym.Env):
         want a narrower range. The methods are accessed publicly as "step", "reset",
         etc...
         """
-
-        self.seed(seed)
 
         if obs_keys is None:
             obs_keys = [
