@@ -33,6 +33,7 @@ def plot_episode(
     figsize: Tuple = (4.62, 3),
     rewards_key: str = "rewards",
     dpi: int = 100,
+    include_episode_stats: bool = True,
 ):
     """Plot a single episode of battery control problem."""
 
@@ -110,33 +111,22 @@ def plot_episode(
     else:
         power_diff_sum = 0
 
-    ep_summary_stats = (
-        # "\\rule{{67pt}}{{0.25pt}}"
-        "\n \\textbf{{Episode statistics}}"
-        "\n Sum of rewards: {:>8.3f} \\\\"
-        "\n Sum of costs:  {:>15.3f} \\\\"
-        "\n Sum of penalties: {:>11.3f}"
-    ).format(
-        float(sum(data["rewards"])),
-        float(sum(data["cost"])),
-        power_diff_sum,
-    )
-
-    # ax.text(
-    #     1.04,
-    #     0.2,
-    #     ep_summary_stats,
-    #     color="black",
-    #     bbox=dict(
-    #         facecolor="none",
-    #         edgecolor="grey",
-    #         # boxstyle="Square"
-    #     ),
-    #     transform=plt.gca().transAxes,
-    # )
-
     handles, _ = ax.get_legend_handles_labels()
-    handles.append(matplotlib.patches.Patch(color="none", label=ep_summary_stats))
+
+    if include_episode_stats:
+        ep_summary_stats = (
+            # "\\rule{{67pt}}{{0.25pt}}"
+            "\n \\textbf{{Episode statistics}}"
+            "\n Sum of rewards: {:>8.3f} \\\\"
+            "\n Sum of costs:  {:>15.3f} \\\\"
+            "\n Sum of penalties: {:>11.3f}"
+        ).format(
+            float(sum(data["rewards"])),
+            float(sum(data["cost"])),
+            power_diff_sum,
+        )
+
+        handles.append(matplotlib.patches.Patch(color="none", label=ep_summary_stats))
 
     plt.legend(
         bbox_to_anchor=(1.02, 1.025),
