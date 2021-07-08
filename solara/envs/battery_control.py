@@ -59,8 +59,6 @@ class BatteryControlEnv(gym.Env):
                 "pv_gen",
                 "battery_cont",
                 "time_step",
-                "cum_load",
-                "cum_pv_gen",
             ]
         self.obs_keys = obs_keys
 
@@ -100,6 +98,18 @@ class BatteryControlEnv(gym.Env):
             ),
             "cum_pv_gen": gym.spaces.Box(
                 low=0, high=np.finfo(np.float32).max, shape=(1,), dtype=np.float32
+            ),
+            "load_change": gym.spaces.Box(
+                low=np.finfo(np.float32).min,
+                high=np.finfo(np.float32).max,
+                shape=(1,),
+                dtype=np.float32,
+            ),
+            "pv_change": gym.spaces.Box(
+                low=np.finfo(np.float32).min,
+                high=np.finfo(np.float32).max,
+                shape=(1,),
+                dtype=np.float32,
             ),
         }
 
@@ -145,7 +155,7 @@ class BatteryControlEnv(gym.Env):
         self.logger.debug("step - action: %1.3f", action)
 
         # Get old state
-        load, pv_generation, _, _, _, sum_load, sum_pv_gen = self.state.values()
+        load, pv_generation, _, _, _, sum_load, sum_pv_gen, _, _ = self.state.values()
 
         # Actions are proportion of max/min charging power, hence scale up
         if action > 0:
@@ -180,8 +190,14 @@ class BatteryControlEnv(gym.Env):
             info["power_diff"] = power_diff
 
         # Get load and PV generation for next time step
-        load = self.load.get_next_load()
-        pv_generation = self.solar.get_next_generation()
+        new_load = self.load.get_next_load()
+        load_change = load - new_load
+        load = new_load
+
+        new_pv_generation = self.solar.get_next_generation()
+        pv_change = pv_generation - new_pv_generation
+        pv_generation = new_pv_generation
+
         battery_cont = self.battery.get_energy_content()
 
         sum_load += load
@@ -196,6 +212,8 @@ class BatteryControlEnv(gym.Env):
             "time_step_cont": self.time_step.astype(np.float32),
             "cum_load": sum_load,
             "cum_pv_gen": sum_pv_gen,
+            "load_change": np.array([load_change], dtype=np.float32),
+            "pv_change": np.array([pv_change], dtype=np.float32),
         }
 
         observation = self._get_obs_from_state(self.state)
@@ -252,6 +270,8 @@ class BatteryControlEnv(gym.Env):
             "time_step_cont": np.array([0.0], dtype=np.float32),
             "cum_load": np.array([0.0], dtype=np.float32),
             "cum_pv_gen": np.array([0.0], dtype=np.float32),
+            "load_change": np.array([0.0], dtype=np.float32),
+            "pv_change": np.array([0.0], dtype=np.float32),
         }
 
         observation = self._get_obs_from_state(self.state)
