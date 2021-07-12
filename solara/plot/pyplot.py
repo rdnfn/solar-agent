@@ -10,10 +10,13 @@ import seaborn as sns
 from solara.plot.constants import COLORS, LABELS, MARKERS
 
 
-def default_setup() -> None:
+def default_setup(figsize=None) -> None:
     """Setup default matplotlib settings."""
 
-    plt.figure(figsize=(6, 3), dpi=100, tight_layout=True)
+    if figsize is None:
+        figsize = (6, 3)
+
+    plt.figure(figsize=figsize, dpi=100, tight_layout=True)
     sns.set_style("ticks", {"dashes": False})
     sns.set_context("paper")
 
