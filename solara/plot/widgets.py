@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 
 import ipywidgets as widgets
 import numpy as np
+import matplotlib.pyplot as plt
 
 import solara.plot.pyplot
 import solara.utils.rllib
@@ -250,6 +251,7 @@ class InteractiveEpisodes(widgets.HBox):
                 y_max=y_range[1],
                 figsize=self.plot_figsize,
             )
+            plt.show()
             self._print_episode_data(single_episode_data)
 
         with self.widgets["log_out"]:
@@ -262,11 +264,16 @@ class InteractiveEpisodes(widgets.HBox):
         Args:
             single_episode_data (Dict): data for single episode
         """
+        if "power_diff" in single_episode_data:
+            power_diff_sum = float(sum(single_episode_data["power_diff"]))
+        else:
+            power_diff_sum = 0
+
         print(
             "Overall - Rewards: {:.3f}, Cost: {:.3f}, Power_diff: {:.6f}".format(
                 float(sum(single_episode_data["rewards"])),
                 float(sum(single_episode_data["cost"])),
-                float(sum(single_episode_data["power_diff"])),
+                power_diff_sum,
             )
         )
 

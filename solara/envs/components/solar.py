@@ -54,16 +54,16 @@ class DataPV(PVModel):
 
         self.reset()
 
-    def reset(self) -> None:
-        """Reset the PV system to new randomly sampled data."""
+    def reset(self, start: int = None) -> None:
+        """Reset the load model to new randomly sampled data."""
 
         self.time_step = 0
 
         # Set values for entire episode
         if self.fixed_start is not None:
             start = self.fixed_start
-        else:
-            start = np.random.randint(len(self.data) // 24) * 24
+        elif start is None:
+            start = np.random.randint((len(self.data) // 24) - 1) * 24
 
         self.start = start
 

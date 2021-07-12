@@ -1,7 +1,12 @@
 """Module defining project notation."""
 
-from dataclasses import dataclass
-from typing import List
+from __future__ import annotations
+
+from dataclasses import dataclass, InitVar
+from typing import TYPE_CHECKING, List
+
+if TYPE_CHECKING:
+    import solara.envs.wiring
 
 
 @dataclass
@@ -12,10 +17,17 @@ class VarDef:
     latex_math: str = " "
     unit: str = ""
     description: str = ""
+    latex_cmd: InitVar[str] = None
+    time_arg: bool = False  # whether the variable has time argument, e.g. P(t).
+    cp_type: str = None  # convex problem var type: "variable" or "parameter"
+    cp_area: str = "general"  # which problem part: e.g. "battery", "grid", etc.
 
-    @property
-    def latex_cmd(self) -> str:
-        return "\\" + self.var_name.replace("_", "")
+    def __post_init__(self, latex_cmd):
+        """Complete init."""
+        if latex_cmd is not None:
+            self.latex_cmd = latex_cmd
+        else:
+            self.latex_cmd = "\\" + self.var_name.replace("_", "")
 
 
 @dataclass
@@ -30,27 +42,75 @@ class NotationCollection:
     def print_notation_style(self) -> None:
         """Print notation as latex style file commands."""
         for variable in self.notation_list:
-            print("\\def{}{{{}}}".format(variable.latex_cmd, variable.latex_math))
+            if variable.time_arg:
+                print(
+                    "\\newcommand{{{}}}[1][(t)]{{{}#1}}".format(
+                        variable.latex_cmd, variable.latex_math
+                    )
+                )
+            else:
+                print(
+                    "\\newcommand{{{}}}{{{}}}".format(
+                        variable.latex_cmd, variable.latex_math
+                    )
+                )
 
-    def get_latex_table_str(self) -> str:
+    def _get_table_var_info(
+        self, variable: VarDef, mrkdwn: bool = False
+    ) -> tuple(str, str, str, str):
+        """Create column entries for table row.
+
+        Args:
+            variable (VarDef): variable described in row
+            mrkdwn (bool): whether the table row is in markdown. Defaults to False.
+
+        Returns:
+            [type]: [description]
+        """
+
+        if mrkdwn:
+            var_name = variable.var_name
+            if variable.time_arg:
+                latex = variable.latex_math + "(t)"
+            else:
+                latex = variable.latex_math
+        else:
+            var_name = variable.var_name.replace("_", r"\_")
+            latex = variable.latex_cmd
+
+        return (
+            latex,
+            variable.description,
+            variable.unit,
+            var_name,
+        )
+
+    def get_latex_table_str(self, print_python_var_name=False) -> str:
         """Get notation table formatted in latex.
 
         Returns:
             str: latex string
         """
+        num_cols = 3 + int(print_python_var_name)
 
         out = ""
         out += r"\begin{center}" + "\n"
-        out += r"\begin{tabular}{ l p{6cm} l l}" + "\n"
-        out += "Variable & Description & Unit & Python Name \\\\ \n"
+        out += r"\begin{tabular}{ l | p{8cm}" + "| l" * (num_cols - 2) + r"}" + "\n"
+        out += "Name & Description & Unit "
+        if print_python_var_name:
+            out += "& Python Name"
+        out += " \\\\ \n"
         out += "\\hline"
 
+        row_str = "${}$ & {} & {}"
+        if print_python_var_name:
+            row_str += " & \\texttt{{{}}}"
+        row_str += " \\\\"
+
         for variable in self.notation_list:
-            out += "${}$ & {} & {} & \\texttt{{{}}} \\\\".format(
-                variable.latex_math,
-                variable.description,
-                variable.unit,
-                variable.var_name.replace("_", r"\_"),
+
+            out += row_str.format(
+                *self._get_table_var_info(variable),
             )
             out += "\n"
 
@@ -72,17 +132,264 @@ class NotationCollection:
 
         for variable in self.notation_list:
             out += "${}$ | {} | {} | `{}`".format(
-                variable.latex_math,
-                variable.description,
-                variable.unit,
-                variable.var_name,
+                *self._get_table_var_info(variable, mrkdwn=True)
             )
             out += "\n"
 
         return out
 
 
+def create_power_variables(
+    power_flow: solara.envs.wiring.PowerFlow, include_in_out_vars: bool = True
+) -> list:
+    """Create a list of notation variable definitions from an electric system."""
+    connections = power_flow.get_connections()
+
+    var_defs = []
+    for component in power_flow.components:
+
+        # overall power
+        if include_in_out_vars:
+            var_name = "power_flow['{}']".format(component)
+            latex_math = "P_{}".format(power_flow.component_abbr[component])
+            unit: str = "kW"
+            description: str = "power input(negative)/ output(positive) of {}".format(
+                component
+            )
+            latex_cmd = "\\powerflow{}".format(component)
+
+            var_defs.append(
+                VarDef(
+                    var_name,
+                    latex_math,
+                    unit,
+                    description,
+                    latex_cmd=latex_cmd,
+                    time_arg=True,
+                    cp_type="variable",
+                )
+            )
+
+        # input
+        if connections and component in [conn[1] for conn in connections]:
+            var_name = "-min(power_flow['{}'], 0)".format(component)
+            latex_math = "P_{{\\rightarrow {}}}".format(
+                power_flow.component_abbr[component]
+            )
+            unit: str = "kW"
+            description: str = "power input to {}".format(component)
+            latex_cmd = "\\powerin{}".format(component)
+
+            var_defs.append(
+                VarDef(
+                    var_name,
+                    latex_math,
+                    unit,
+                    description,
+                    latex_cmd=latex_cmd,
+                    time_arg=True,
+                    cp_type="variable",
+                    cp_area="power",
+                )
+            )
+
+        # output
+        if connections and component in [conn[0] for conn in connections]:
+            var_name = "max(power_flow['{}'], 0)".format(component)
+            latex_math = "P_{{{}\\rightarrow }}".format(
+                power_flow.component_abbr[component]
+            )
+            unit: str = "kW"
+            description: str = "power output from {}".format(component)
+            latex_cmd = "\\powerout{}".format(component)
+
+            var_defs.append(
+                VarDef(
+                    var_name,
+                    latex_math,
+                    unit,
+                    description,
+                    latex_cmd=latex_cmd,
+                    time_arg=True,
+                    cp_type="variable",
+                    cp_area="power",
+                )
+            )
+
+    for connection in connections:
+        source_cmp, target_cmp = connection
+        var_name = "power_flow['{}','{}']".format(source_cmp, target_cmp)
+        latex_math = "P_{{{}{}}}".format(
+            power_flow.component_abbr[source_cmp], power_flow.component_abbr[target_cmp]
+        )
+        unit: str = "kW"
+        description: str = "power transferred from {} to {}".format(
+            source_cmp, target_cmp
+        )
+        latex_cmd = "\\power{}to{}".format(source_cmp, target_cmp)
+
+        var_defs.append(
+            VarDef(
+                var_name,
+                latex_math,
+                unit,
+                description,
+                latex_cmd=latex_cmd,
+                time_arg=True,
+                cp_type="variable",
+            )
+        )
+
+    return var_defs
+
+
 _NOTATION_LIST = [
+    # Battery
+    VarDef(
+        "energy_battery",
+        r"E_\text{b}",
+        "kWh",
+        "energy content of the battery",
+        time_arg=True,
+        cp_type="variable",
+        cp_area="battery",
+    ),
+    VarDef(
+        "is_battery_charging",
+        r"I",
+        "",
+        "Boolean indicator variable whether battery is charging",
+        time_arg=True,
+        cp_type="variable",
+        cp_area="battery",
+    ),
+    VarDef(
+        "power_out_grid_above_thresh",
+        r"\bar{P}_{g\rightarrow}",
+        "kW",
+        "Amount of power output of grid above threshold",
+        time_arg=True,
+        cp_type="variable",
+        cp_area="grid",
+    ),
+    VarDef(
+        "size",
+        r"B",
+        "kWh",
+        "energy capacity of battery",
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    VarDef(
+        "kWh_per_cell",
+        r"B_\text{cell}",
+        "kWh",
+        "energy capacity per individual cell",
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    VarDef(
+        "num_cells",
+        r"n_\text{cell}",
+        "cells",
+        "number of cells in battery",
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    VarDef(
+        "initial_energy_content",
+        r"E_b (0)",
+        "kWh",
+        "initial energy content of battery at time step 0",
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    VarDef(
+        "nominal_voltage_c",
+        r"V_{\text{nom},c}",
+        "V",
+        "nominal voltage of battery when charging",
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    VarDef(
+        "nominal_voltage_d",
+        r"V_{\text{nom},d}",
+        "V",
+        "nominal voltage of battery when discharging",
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    VarDef(
+        "eff_discharge",
+        r"\eta_d",
+        "kWh",
+        (
+            "efficiency of discharging the battery, amount of energy"
+            " content reduction for discharging 1 kWh"
+        ),
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    VarDef(
+        "eff_charge",
+        r"\eta_c",
+        "kWh",
+        (
+            "efficiency of charging the battery, amount of"
+            " energy content increase for charging 1 kWh"
+        ),
+        cp_type="parameter",
+        cp_area="battery",
+    ),
+    # Grid
+    VarDef(
+        "price_base",
+        r"\pi_b",
+        r"\$/kWh",
+        "base price paid for energy drawn from the grid",
+        cp_type="parameter",
+        cp_area="grid",
+    ),
+    VarDef(
+        "price_penalty",
+        r"\pi_d",
+        r"\$/kWh",
+        (
+            "additional price penalty paid for energy drawn"
+            " from the grid when demand is above threshold"
+        ),
+        cp_type="parameter",
+        cp_area="grid",
+    ),
+    VarDef(
+        "grid_threshold",
+        r"\Gamma",
+        "kW",
+        "demand threshold above which price penalty is paid",
+        cp_type="parameter",
+        cp_area="grid",
+    ),
+    # General parameters
+    VarDef(
+        "num_timesteps",
+        r"T",
+        "steps",
+        "number of time steps in an episode",
+        cp_type="parameter",
+        cp_area="general",
+    ),
+    VarDef(
+        "len_timestep",
+        r"\Delta_t",
+        "hours",
+        "length of a time step",
+        cp_type="parameter",
+        cp_area="general",
+    ),
+]
+
+_OLD_POWER_NOTATION = [
     # Power variables
     VarDef("power_charge", r"P_\text{c}", "kW", "power used to charge the battery"),
     VarDef("power_discharge", r"P_\text{d}", "kW", "power discharged from the battery"),
@@ -99,68 +406,6 @@ _NOTATION_LIST = [
     VarDef(
         "power_over_thresh", r"P_\text{over}", "kW", "power over peak demand threshold"
     ),
-    # Battery
-    VarDef("energy_battery", r"E_\text{batt}", "kWh", "energy content of the battery"),
-    VarDef("size", r"B", "kWh", "energy capacity of battery"),
-    VarDef(
-        "kWh_per_cell", r"B_\text{cell}", "kWh", "energy capacity per individual cell"
-    ),
-    VarDef("num_cells", r"n_\text{cell}", "cells", "number of cells in battery"),
-    VarDef(
-        "nominal_voltage_c",
-        r"V_{\text{nom},c}",
-        "V",
-        "nominal voltage of battery when charging",
-    ),
-    VarDef(
-        "nominal_voltage_d",
-        r"V_{\text{nom},d}",
-        "V",
-        "nominal voltage of battery when discharging",
-    ),
-    # Grid
-    VarDef(
-        "price_base",
-        r"\pi_b",
-        r"\$/kWh",
-        "base price paid for energy drawn from the grid",
-    ),
-    VarDef(
-        "price_penalty",
-        r"\pi_d",
-        r"\$/kWh",
-        (
-            "additional price penalty paid for energy drawn"
-            " from the grid when demand is above threshold"
-        ),
-    ),
-    VarDef(
-        "grid_threshold",
-        r"\Gamma",
-        "kW",
-        "demand threshold above which price penalty is paid",
-    ),
-    VarDef(
-        "eff_discharge",
-        r"\eta_d",
-        "kWh",
-        (
-            "efficiency of discharging the battery, amount of energy"
-            " content reduction for discharging 1 kWh"
-        ),
-    ),
-    VarDef(
-        "eff_charge",
-        r"\eta_c",
-        "kWh",
-        (
-            "efficiency of charging the battery, amount of"
-            " energy content increase for charging 1 kWh"
-        ),
-    ),
-    # General parameters
-    VarDef("num_timesteps", r"T", "steps", "number of time steps in an episode"),
-    VarDef("len_timestep", r"\delta_\text{step}", "hours", "length of a timestep"),
 ]
 
 NOTATION = NotationCollection(_NOTATION_LIST)

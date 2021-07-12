@@ -3,13 +3,13 @@ from __future__ import annotations
 
 # Above enables using TYPE_CHECKING without using quotes around annotation
 
-from typing import TYPE_CHECKING, Tuple, List, Dict
+from typing import TYPE_CHECKING, Tuple, List, Dict, Union
 
 import numpy as np
 import glob
+import ray.rllib
 
 if TYPE_CHECKING:
-    import ray.rllib.agents.trainer
     import gym
 
 
@@ -53,13 +53,17 @@ def run_episode(
 
 
 def run_episodes_from_checkpoints(
-    agent: ray.rllib.agents.trainer.Trainer, check_save_path: str
+    agent: ray.rllib.agents.trainer.Trainer,
+    check_save_path: str,
+    check_range: Union[int, List[int, int]] = None,
 ) -> List[Dict]:
     """Run episode from agent checkpoints and get corresponding episode trajectories.
 
     Args:
         agent (ray.rllib.agents.trainer.Trainer): agent to load checkpoints for.
         check_save_path (str): path where checkpoints are saved.
+        check_num (int): range, or single number of checkpoint(s) to load and run.
+            Defaults to None which loads all checkpoints.
 
     Returns:
         List[Dict]: list of dictionaries, each with data from one episode.
@@ -68,14 +72,22 @@ def run_episodes_from_checkpoints(
     final_iter_num = max(
         [
             int(dirname.split("_")[-1])
-            for dirname in glob.glob(check_save_path + "/*")
+            for dirname in glob.glob(glob.escape(check_save_path) + "/*")
             if "checkpoint" in dirname
         ]
     )
 
     episode_dicts = []
 
-    for i in range(1, final_iter_num + 1):
+    if check_range is None:
+        check_range = [1, final_iter_num + 1]
+    elif isinstance(check_range, int):
+        check_range = [check_range, check_range + 1]
+
+    if check_range[1] > final_iter_num + 1:
+        raise ValueError("check_range out of range of existing checkpoints.")
+
+    for i in range(*check_range):
         agent.restore(
             check_save_path + "/checkpoint_{i:06.0f}/checkpoint-{i}".format(i=i)
         )
@@ -180,3 +192,55 @@ class DeterministicAgent:
 
     def env_creator(self) -> gym.Env:
         return self.env
+
+
+class InfoCallback(ray.rllib.agents.callbacks.DefaultCallbacks):
+    """Callback to add additional metrics over the training process from step infos."""
+
+    # pylint: disable=unused-argument
+
+    info_keys = ["cost", "power_diff", "battery_cont"]
+
+    def on_episode_start(
+        self,
+        *,
+        worker: ray.rllib.evaluation.RolloutWorker,
+        base_env: ray.rllib.env.BaseEnv,
+        policies: Dict[str, ray.rllib.policy.Policy],
+        episode: ray.rllib.evaluation.MultiAgentEpisode,
+        env_index: int,
+        **kwargs
+    ):
+        """Executed at start of episode."""
+
+        episode.user_data["infos"] = []
+
+    def on_episode_step(
+        self,
+        *,
+        worker: ray.rllib.evaluation.RolloutWorker,
+        base_env: ray.rllib.env.BaseEnv,
+        episode: ray.rllib.evaluation.MultiAgentEpisode,
+        env_index: int,
+        **kwargs
+    ):
+        """Executed on each episode step."""
+
+        episode.user_data["infos"].append(episode.last_info_for())
+
+    def on_episode_end(
+        self,
+        *,
+        worker: ray.rllib.evaluation.RolloutWorker,
+        base_env: ray.rllib.env.BaseEnv,
+        policies: Dict[str, ray.rllib.policy.Policy],
+        episode: ray.rllib.evaluation.MultiAgentEpisode,
+        env_index: int,
+        **kwargs
+    ):
+        """Executed at end of episode."""
+
+        for key in self.info_keys:
+            if key in episode.user_data["infos"][0].keys():
+                key_data = [info[key] for info in episode.user_data["infos"]]
+                episode.custom_metrics[key] = sum(key_data)

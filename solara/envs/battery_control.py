@@ -1,7 +1,7 @@
 """Module with battery control environment of a photovoltaic installation."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Tuple, List
 import logging
 import gym
 import numpy as np
@@ -28,6 +28,7 @@ class BatteryControlEnv(gym.Env):
         time_step_len: float = 1,
         grid_charging: bool = False,
         infeasible_control_penalty: bool = False,
+        obs_keys: List = None,
         logging_level: str = "WARNING",
         log_handler: logging.Handler = None,
     ) -> None:
@@ -52,11 +53,22 @@ class BatteryControlEnv(gym.Env):
         etc...
         """
 
+        if obs_keys is None:
+            obs_keys = [
+                "load",
+                "pv_gen",
+                "battery_cont",
+                "time_step",
+            ]
+        self.obs_keys = obs_keys
+
         self.battery = battery
         self.solar = solar
         self.grid = grid
         self.load = load
         self.components = [battery, solar, grid, load]
+
+        self.data_len = min(len(self.load.data), len(self.solar.data))
 
         self.episode_len = episode_len
         self.time_step_len = time_step_len
@@ -67,7 +79,7 @@ class BatteryControlEnv(gym.Env):
 
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float32)
 
-        spaces = {
+        obs_spaces = {
             "load": gym.spaces.Box(
                 low=0, high=np.finfo(np.float32).max, shape=(1,), dtype=np.float32
             ),
@@ -78,28 +90,37 @@ class BatteryControlEnv(gym.Env):
                 low=0, high=self.battery.size, shape=(1,), dtype=np.float32
             ),
             "time_step": gym.spaces.Discrete(self.episode_len + 1),
+            "time_step_cont": gym.spaces.Box(
+                low=0, high=self.episode_len + 1, shape=(1,), dtype=np.float32
+            ),
             "cum_load": gym.spaces.Box(
                 low=0, high=np.finfo(np.float32).max, shape=(1,), dtype=np.float32
             ),
             "cum_pv_gen": gym.spaces.Box(
                 low=0, high=np.finfo(np.float32).max, shape=(1,), dtype=np.float32
             ),
+            "load_change": gym.spaces.Box(
+                low=np.finfo(np.float32).min,
+                high=np.finfo(np.float32).max,
+                shape=(1,),
+                dtype=np.float32,
+            ),
+            "pv_change": gym.spaces.Box(
+                low=np.finfo(np.float32).min,
+                high=np.finfo(np.float32).max,
+                shape=(1,),
+                dtype=np.float32,
+            ),
         }
-        self.observation_space = gym.spaces.Dict(spaces)
+
+        # Selecting the subset of obs spaces selected
+        obs_spaces = {key: obs_spaces[key] for key in self.obs_keys}
+        self.observation_space = gym.spaces.Dict(obs_spaces)
 
         (
             self.min_charge_power,
             self.max_charge_power,
         ) = self.battery.get_charging_limits()
-
-        self.obs_keys = [
-            "load",
-            "pv_gen",
-            "battery_cont",
-            "time_step",
-            "cum_load",
-            "cum_pv_gen",
-        ]
 
         self._setup_logging(logging_level, log_handler)
         self.logger.info("Environment initialised.")
@@ -127,11 +148,14 @@ class BatteryControlEnv(gym.Env):
             action,
             type(action),
         )
+
+        info = {}
+
         action = float(action)  # getting the float value
         self.logger.debug("step - action: %1.3f", action)
 
         # Get old state
-        load, pv_generation, _, _, sum_load, sum_pv_gen = self.state.values()
+        load, pv_generation, _, _, _, sum_load, sum_pv_gen, _, _ = self.state.values()
 
         # Actions are proportion of max/min charging power, hence scale up
         if action > 0:
@@ -163,36 +187,44 @@ class BatteryControlEnv(gym.Env):
             power_diff = np.abs(charging_power - float(attempted_action))
             reward -= power_diff
             self.logger.debug("step - cost: %6.3f, power_diff: %6.3f", cost, power_diff)
+            info["power_diff"] = power_diff
 
         # Get load and PV generation for next time step
-        load = self.load.get_next_load()
-        pv_generation = self.solar.get_next_generation()
+        new_load = self.load.get_next_load()
+        load_change = load - new_load
+        load = new_load
+
+        new_pv_generation = self.solar.get_next_generation()
+        pv_change = pv_generation - new_pv_generation
+        pv_generation = new_pv_generation
+
+        battery_cont = self.battery.get_energy_content()
 
         sum_load += load
         sum_pv_gen += pv_generation
         self.time_step += 1
 
-        observation = {
+        self.state = {
             "load": np.array([load], dtype=np.float32),
             "pv_gen": np.array([pv_generation], dtype=np.float32),
-            "battery_cont": np.array(
-                [self.battery.get_energy_content()], dtype=np.float32
-            ),
+            "battery_cont": np.array([battery_cont], dtype=np.float32),
             "time_step": int(self.time_step),
+            "time_step_cont": self.time_step.astype(np.float32),
             "cum_load": sum_load,
             "cum_pv_gen": sum_pv_gen,
+            "load_change": np.array([load_change], dtype=np.float32),
+            "pv_change": np.array([pv_change], dtype=np.float32),
         }
 
-        self.state = observation
+        observation = self._get_obs_from_state(self.state)
 
         done = self.time_step >= self.episode_len
 
-        info = {
-            "net_load": net_load,
-            "charging_power": charging_power,
-            "cost": cost,
-            "power_diff": power_diff,
-        }
+        info["net_load"] = net_load
+        info["charging_power"] = charging_power
+        info["cost"] = cost
+        info["battery_cont"] = battery_cont
+
         info = {**info, **self.grid.get_info()}
 
         self.logger.debug("step - info %s", info)
@@ -203,6 +235,17 @@ class BatteryControlEnv(gym.Env):
 
         return (observation, float(reward), done, info)
 
+    def _get_obs_from_state(self, state: dict) -> dict:
+        """Get observation from state dict.
+
+        Args:
+            state (dict): state dictionary
+
+        Returns:
+            dict: observation dictionary
+        """
+        return {key: state[key] for key in self.obs_keys}
+
     def reset(self) -> object:
         """Resets environment to initial state and returns an initial observation.
 
@@ -210,9 +253,11 @@ class BatteryControlEnv(gym.Env):
             observation (object): the initial observation.
         """
 
+        start = np.random.randint((self.data_len // 24) - 1) * 24
+
         self.battery.reset()
-        self.load.reset()
-        self.solar.reset()
+        self.load.reset(start=start)
+        self.solar.reset(start=start)
 
         load = self.load.get_next_load()
         pv_gen = self.solar.get_next_generation()
@@ -222,14 +267,20 @@ class BatteryControlEnv(gym.Env):
             "pv_gen": np.array([pv_gen], dtype=np.float32),
             "battery_cont": np.array([0.0], dtype=np.float32),
             "time_step": 0,
+            "time_step_cont": np.array([0.0], dtype=np.float32),
             "cum_load": np.array([0.0], dtype=np.float32),
             "cum_pv_gen": np.array([0.0], dtype=np.float32),
+            "load_change": np.array([0.0], dtype=np.float32),
+            "pv_change": np.array([0.0], dtype=np.float32),
         }
+
+        observation = self._get_obs_from_state(self.state)
+
         self.time_step = np.array([0])
 
         self.logger.debug("Environment reset.")
 
-        return self.state
+        return observation
 
     def render(self, mode: str = "human") -> None:
         """Renders the environment.
@@ -290,7 +341,12 @@ class BatteryControlEnv(gym.Env):
               'seed'. Often, the main seed equals the provided 'seed', but
               this won't be true if seed=None, for example.
         """
-        raise NotImplementedError
+        if seed is None:
+            seed = np.random.randint(10000000)
+
+        np.random.seed(seed)
+
+        return [seed]
 
     def _setup_logging(self, logging_level: str, log_handler: str = None) -> None:
         """Setup logger and handler."""

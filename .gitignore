@@ -95,3 +95,6 @@ io/
 data/
 notebooks/*/tmp/*
 notebooks/*/*.large.ipynb
+notebooks/*/*.hide.ipynb
+figures/*
+nohup.out
