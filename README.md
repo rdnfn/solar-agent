@@ -5,7 +5,7 @@
 
 This project provides Gym environments to train RL agents to operate batteries in solar-plus-battery installations. The setup of how an agent is able to interact with the environment is shown in the Figure below.
 
-![environment setup illustration](https://github.com/rdnfn/solar-agent/blob/main/docs/img/img_001_environment_setup.png)
+![environment setup illustration](https://github.com/rdnfn/solar-agent/blob/main/docs/img/img_003_environment_setup_v2.png)
 
 
 ## Installation
