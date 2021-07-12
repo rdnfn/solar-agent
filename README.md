@@ -3,12 +3,14 @@
  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
  <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 
-This project provides Gym environments to train RL agents to operate batteries in solar-plus-battery installations.
+This project provides Gym environments to train RL agents to operate batteries in solar-plus-battery installations. The setup of how an agent is able to interact with the environment is shown in the Figure below.
+
+![environment setup illustration](https://github.com/rdnfn/solar-agent/blob/main/docs/img/img_003_environment_setup_v2.png)
 
 
 ## Installation
 
-To get started, first clone the environment:
+To get started, first clone the repo:
 
 ```
 git clone https://github.com/rdnfn/solar-agent.git
