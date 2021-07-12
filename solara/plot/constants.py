@@ -2,7 +2,7 @@
 
 LABELS = {
     "load": "Load (kW)",
-    "pv_gen": "PV generation (kW)",
+    "pv_gen": "Solar gen. (kW)",
     "battery_cont": "Energy cont. (kWh)",
     "actions": "Actions",
     "rewards": "Rewards ($)",
@@ -22,6 +22,7 @@ COLORS = {
     "energy_cont": "black",
     "actions": "red",
     "rewards": "purple",
+    "charging_power": "orange",
     "price_threshold": (0.3, 0.3, 0.3, 0.3),
 }
 
