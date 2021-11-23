@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple, List
 import logging
 import gym
+import beogym
 import numpy as np
 
 import solara.utils.logging
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
     from solara.envs.components.solar import PVModel
 
 
-class BatteryControlEnv(gym.Env):
+class BatteryControlEnv(beogym.Env):
     """A gym enviroment for controlling a battery in a PV installation."""
 
     def __init__(
@@ -126,6 +127,35 @@ class BatteryControlEnv(gym.Env):
         self.logger.info("Environment initialised.")
 
         self.reset()
+
+    @property
+    def cvxpy_def(self) -> dict:
+        """Get a CVXPY problem definition. To be implemented optionally.
+
+        Returns:
+            dict: dictionary with all parts of CVXPY problem definition.
+        """
+
+        if not hasattr(self, "_cvxpy_def"):
+
+            # CHANGE: add your problem definition by setting all the
+            # vars (variables, constraints, objective, actions) below.
+            variables = {}
+            constraints = []
+            objective = None
+            # Subset of variables that describe the actions over an episode
+            actions = None
+
+            cvxpy_def = {
+                "variables": variables,
+                "actions": actions,
+                "constraints": constraints,
+                "objective": objective,
+            }
+
+            self._cvxpy_def = cvxpy_def
+
+        return self._cvxpy_def
 
     def step(self, action: object) -> Tuple[object, float, bool, dict]:
         """Run one timestep of the environment's dynamics.
